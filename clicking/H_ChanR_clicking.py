@@ -9,15 +9,13 @@ import matplotlib
 import matplotlib.cm
 import matplotlib.colors
 import matplotlib.pyplot as plt
-import numpy as np
-import spacepy.plot
+import numpy
 import pickle
+import sys
 
-# Cut off the first (spoofed) datetime:
-# g = np.load('flux_py2.npy')[1:]
-# t = np.load('datetime_py2.npy', allow_pickle=True)[1:]
+import spacepy.plot
 
-with open('datetime_and_flux_py3.pickle', 'rb') as fp:
+with open('datetime_and_flux.pickle{}'.format(sys.version_info[0]), 'rb') as fp:
     arrs = pickle.load(fp)
 
 # Flux:
@@ -26,10 +24,10 @@ g = arrs['flux']
 t = arrs['epoch']
 
 # Have to process out nans from g:
-# g = np.where(np.isnan(g), 1e-20, g)
+# g = numpy.where(numpy.isnan(g), 1e-20, g)
 
 # Have to process out 0(s) from g:
-# g = np.where(g == 0, 10**-4, g)
+# g = numpy.where(g == 0, 10**-4, g)
 
 # Get colormesh that we'll paint out nan's from:
 cmap = matplotlib.cm.get_cmap('jet')
