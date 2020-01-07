@@ -23,9 +23,9 @@ import spacepy.pycdf
 INT_PER_DAY = 24
 # For minutes, for example, this would be 1440.
 
-# files = isois.get_latest('psp_isois-epilo_l2-ic')
+files = isois.get_latest('psp_isois-epilo_l2-ic')
 # Some test cases:
-files = isois.get_latest('psp_isois-epilo_l2-ic')[:1]
+# files = isois.get_latest('psp_isois-epilo_l2-ic')[:1]
 # files = isois.get_latest('psp_isois-epilo_l2-ic')[:10] # just first 10
 
 elevation = numpy.choose(numpy.arange(80) % 10, (0, 1, 1, 0, 2, 2, 3, 3, 4, 5))
