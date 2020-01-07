@@ -66,12 +66,3 @@ with warnings.catch_warnings():
 # This will only work with the same version of python as when used with this script:
 with open('datetime_and_flux.pickle{}'.format(sys.version_info[0]), 'wb') as fp:
     pickle.dump({'flux':davg, 'epoch':davg_epoch}, fp)
-
-# So we can also do this, with json, which seems to work fine, even if it's a little
-# less elegant.  That being said, json does have native nan support.
-with open('datetime_and_flux.json', 'w') as fp:
-    # According to ISO 8601, (what datetime will use by default when casting to a string,
-    # but it's nice to be explicit so we can be sure we're reparsing this the same way):
-    e_list = [e.strftime("%Y-%m-%d %H:%M:%S.%f") for e in davg_epoch]
-    f_list = davg.tolist()
-    json.dump({'epoch': e_list, 'flux': f_list}, fp)
