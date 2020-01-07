@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+"""
+Script to import EPILo data files averaged into some arrays of flux and datetime
+or epoch and display using spacepy.plot.utils.EventClicker so events can be
+identified.
+"""
+
 import matplotlib
 import matplotlib.cm
 import matplotlib.colors
