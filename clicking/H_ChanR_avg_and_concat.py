@@ -100,13 +100,6 @@ with warnings.catch_warnings():
                 # Step the counter:
                 j += 1
 
-# Sanity check to make sure we have the number of elements we expect.
-# This doesn't actually do more than make sure we got the iteration correct,
-# but that is still valuable...
-assert flux_mean[:j] == flux_mean
-assert dflux_mean[:j] == dflux_mean
-assert epoch_mean[:j] == epoch_mean
-
 # This will only work with the same version of python as when used with this script:
 with open('datetime_and_flux.pickle{}'.format(sys.version_info[0]), 'wb') as fp:
     pickle.dump({'flux':flux_mean, 'dflux':dflux_mean, 'epoch':epoch_mean}, fp)
