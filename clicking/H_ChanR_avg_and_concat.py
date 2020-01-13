@@ -60,7 +60,8 @@ with warnings.catch_warnings():
                 startidx = numpy.searchsorted(epoch, starttime)
                 stopidx = numpy.searchsorted(epoch, stoptime)
                 # Here we average over look direction (axis 1) and time (axis 0):
-                davg = numpy.concatenate([davg, numpy.reshape(numpy.nanmean(numpy.nanmean(flux, axis=1)[startidx:stopidx, :], axis=0), (1, 15))])
+                davg = numpy.concatenate([davg, numpy.reshape(numpy.nanmean(numpy.nanmean(flux[startidx:stopidx], axis=1),axis=0),
+                                                                   (1, 15))])
                 davg_epoch = numpy.concatenate([davg_epoch, [starttime + datetime.timedelta(days=1) / INT_PER_DAY / 2]])
 
 # This will only work with the same version of python as when used with this script:
