@@ -38,9 +38,11 @@ elevation = numpy.choose(numpy.arange(80) % 10, (0, 1, 1, 0, 2, 2, 3, 3, 4, 5))
 mincut = [9, 10, 10, 9, 8, 7]
 maxcut = [13, 13, 14, 12, 11, 11]
 
-flux_mean = numpy.empty(shape=(0, 15), dtype=numpy.float)
-dflux_mean = numpy.empty(shape=(0, 15), dtype=numpy.float)
-epoch_mean = numpy.empty(0, dtype=datetime.datetime)
+# Initialize these as the right size to avoid copying the array every time:
+maxn = len(files) * INT_PER_DAY
+flux_mean = numpy.empty(shape=(maxn, 15), dtype=numpy.float)
+dflux_mean = numpy.empty(shape=(maxn, 15), dtype=numpy.float)
+epoch_mean = numpy.empty(maxn, dtype=datetime.datetime)
 
 def uncert_prop(inarr, axis):
     """ Propagate the uncertainty of numbers on some axis when averaging down
@@ -55,6 +57,9 @@ def uncert_prop(inarr, axis):
 # This is so nanmean doesn't give us "RuntimeWarning: Mean of empty slice"
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", category=RuntimeWarning)
+
+    # Counter, so we know what hole in the arrays we're at:
+    i = 0
 
     for f in files:
         print('Starting file {}...'.format(os.path.basename(f)))
@@ -79,17 +84,28 @@ with warnings.catch_warnings():
         if len(epoch) > 0:  # Apparently there are some files where we have nothing...
             for i in range(INT_PER_DAY):
                 # Get slicing indices for the time we're looking at:
-                starttime = epoch[0].replace(hour=0, minute=0, second=0, microsecond=0) + i * datetime.timedelta(days=1) / INT_PER_DAY
+                starttime = epoch[0].replace(hour=0, minute=0, second=0, microsecond=0) \
+                    + i * datetime.timedelta(days=1) / INT_PER_DAY
                 stoptime = starttime + datetime.timedelta(days=1) / INT_PER_DAY
                 startidx = numpy.searchsorted(epoch, starttime)
                 stopidx = numpy.searchsorted(epoch, stoptime)
 
                 # Here we average over look direction (axis 1) and time (axis 0):
-                flux_mean = numpy.concatenate([flux_mean, numpy.reshape(numpy.nanmean(numpy.nanmean(flux[startidx:stopidx], axis=1), axis=0),
-                                                                        (1, 15))])
-                dflux_mean = numpy.concatenate([dflux_mean, numpy.reshape(uncert_prop(uncert_prop(dflux[startidx:stopidx], 1), 0),
-                                                                          (1, 15))])
-                epoch_mean = numpy.concatenate([epoch_mean, [starttime + datetime.timedelta(days=1) / INT_PER_DAY / 2]])
+                flux_mean[i] = numpy.reshape(numpy.nanmean(numpy.nanmean(flux[startidx:stopidx], axis=1),
+                                                           axis=0), (1, 15))
+                dflux_mean[i] = numpy.reshape(uncert_prop(uncert_prop(dflux[startidx:stopidx], 1), 0),
+                                              (1, 15))
+                epoch_mean[i] = starttime + datetime.timedelta(days=1) / INT_PER_DAY / 2
+
+        # Step the counter:
+        i += 1
+
+# Sanity check to make sure we have the number of elements we expect.
+# This doesn't actually do more than make sure we got the iteration correct,
+# but that is still valuable...
+assert flux_mean[:i] == flux_mean
+assert dflux_mean[i] == dflux_mean
+assert epoch_mean[i] == epoch_mean
 
 # This will only work with the same version of python as when used with this script:
 with open('datetime_and_flux.pickle{}'.format(sys.version_info[0]), 'wb') as fp:
