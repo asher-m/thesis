@@ -39,8 +39,8 @@ elevation = numpy.choose(numpy.arange(80) % 10, (0, 1, 1, 0, 2, 2, 3, 3, 4, 5))
 mincut = [9, 10, 10, 9, 8, 7]
 maxcut = [13, 13, 14, 12, 11, 11]
 
-davg = numpy.empty(shape=(0, 15), dtype=numpy.float)
-davg_epoch = numpy.empty(0, dtype=datetime.datetime)
+flux_mean = numpy.empty(shape=(0, 15), dtype=numpy.float)
+epoch_mean = numpy.empty(0, dtype=datetime.datetime)
 
 # This is so nanmean doesn't give us "RuntimeWarning: Mean of empty slice"
 with warnings.catch_warnings():
@@ -60,10 +60,10 @@ with warnings.catch_warnings():
                 startidx = numpy.searchsorted(epoch, starttime)
                 stopidx = numpy.searchsorted(epoch, stoptime)
                 # Here we average over look direction (axis 1) and time (axis 0):
-                davg = numpy.concatenate([davg, numpy.reshape(numpy.nanmean(numpy.nanmean(flux[startidx:stopidx], axis=1),axis=0),
+                flux_mean = numpy.concatenate([flux_mean, numpy.reshape(numpy.nanmean(numpy.nanmean(flux[startidx:stopidx], axis=1),axis=0),
                                                                    (1, 15))])
-                davg_epoch = numpy.concatenate([davg_epoch, [starttime + datetime.timedelta(days=1) / INT_PER_DAY / 2]])
+                epoch_mean = numpy.concatenate([epoch_mean, [starttime + datetime.timedelta(days=1) / INT_PER_DAY / 2]])
 
 # This will only work with the same version of python as when used with this script:
 with open('datetime_and_flux.pickle{}'.format(sys.version_info[0]), 'wb') as fp:
-    pickle.dump({'flux':davg, 'epoch':davg_epoch}, fp)
+    pickle.dump({'flux':flux_mean, 'epoch':epoch_mean}, fp)
