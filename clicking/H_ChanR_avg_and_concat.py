@@ -59,7 +59,7 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore", category=RuntimeWarning)
 
     # Counter, so we know what hole in the arrays we're at:
-    i = 0
+    j = 0
 
     for f in files:
         print('Starting file {}...'.format(os.path.basename(f)))
@@ -91,21 +91,21 @@ with warnings.catch_warnings():
                 stopidx = numpy.searchsorted(epoch, stoptime)
 
                 # Here we average over look direction (axis 1) and time (axis 0):
-                flux_mean[i] = numpy.reshape(numpy.nanmean(numpy.nanmean(flux[startidx:stopidx], axis=1),
+                flux_mean[j] = numpy.reshape(numpy.nanmean(numpy.nanmean(flux[startidx:stopidx], axis=1),
                                                            axis=0), (1, 15))
-                dflux_mean[i] = numpy.reshape(uncert_prop(uncert_prop(dflux[startidx:stopidx], 1), 0),
+                dflux_mean[j] = numpy.reshape(uncert_prop(uncert_prop(dflux[startidx:stopidx], 1), 0),
                                               (1, 15))
-                epoch_mean[i] = starttime + datetime.timedelta(days=1) / INT_PER_DAY / 2
+                epoch_mean[j] = starttime + datetime.timedelta(days=1) / INT_PER_DAY / 2
 
-        # Step the counter:
-        i += 1
+                # Step the counter:
+                j += 1
 
 # Sanity check to make sure we have the number of elements we expect.
 # This doesn't actually do more than make sure we got the iteration correct,
 # but that is still valuable...
-assert flux_mean[:i] == flux_mean
-assert dflux_mean[i] == dflux_mean
-assert epoch_mean[i] == epoch_mean
+assert flux_mean[:j] == flux_mean
+assert dflux_mean[:j] == dflux_mean
+assert epoch_mean[:j] == epoch_mean
 
 # This will only work with the same version of python as when used with this script:
 with open('datetime_and_flux.pickle{}'.format(sys.version_info[0]), 'wb') as fp:
