@@ -47,10 +47,10 @@ def uncert_prop(inarr, axis):
     along that axis. """
     # Uncertainty carries like addition of quadrature divided by number of
     # things.
-    return numpy.sqrt(numpy.sum(inarr**2, axis=axis)) / \
-        numpy.sum(numpy.invert(numpy.isnan(inarr)), axis=axis)
+    return numpy.sqrt(numpy.nansum(inarr**2, axis=axis)) / \
+        numpy.nansum(numpy.invert(numpy.isnan(inarr)), axis=axis)
     # Alternatively, we may need to use:
-    # return numpy.sqrt(numpy.sum(inarr**2, axis=axis))
+    # return numpy.sqrt(numpy.nansum(inarr**2, axis=axis))
 
 # This is so nanmean doesn't give us "RuntimeWarning: Mean of empty slice"
 with warnings.catch_warnings():
