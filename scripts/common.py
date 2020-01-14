@@ -5,6 +5,10 @@ Created on Tue Jan 14 01:21:56 2020
 @author: asher
 """
 
+import numpy
+
+
+
 def uncert_prop(inarr, axis):
     """ Propagate the uncertainty of numbers on some axis when averaging down
     along that axis. """
