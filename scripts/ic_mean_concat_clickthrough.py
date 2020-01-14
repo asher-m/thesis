@@ -64,7 +64,9 @@ c = spacepy.plot.utils.EventClicker(n_phases=2, interval=datetime.timedelta(days
 c.analyze()
 
 # Lastly, dump the selected event times:
-with open('../data/ic_event_clickthrough_times_{}.pickle{}'\
-          .format(datetime.datetime.now().strftime('%F-%H%M%S'),
-                  sys.version_info[0]), 'wb') as fp:
-    pickle.dump(c.get_eventS(), fp)
+# with open('../data/ic_event_clickthrough_times_{}.pickle{}'\
+#           .format(datetime.datetime.now().strftime('%F-%H%M%S'),
+#                   sys.version_info[0]), 'wb') as fp:
+with open('../data/ic_event_clickthrough_times.pickle{}'\
+          .format(sys.version_info[0]), 'wb') as fp:
+    pickle.dump(c.get_events(), fp)
