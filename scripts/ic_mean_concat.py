@@ -14,6 +14,7 @@ import pickle
 import sys
 import warnings
 
+from common import uncert_prop
 import isois
 import spacepy.pycdf
 
@@ -23,15 +24,6 @@ INT_PER_DAY = 24
 # For minutes, for example, this would be 1440.
 
 
-def uncert_prop(inarr, axis):
-    """ Propagate the uncertainty of numbers on some axis when averaging down
-    along that axis. """
-    # Uncertainty carries like addition of quadrature divided by number of
-    # things.
-    return numpy.sqrt(numpy.nansum(inarr**2, axis=axis)) / \
-        numpy.nansum(numpy.invert(numpy.isnan(inarr)), axis=axis)
-    # Alternatively, we may need to use:
-    # return numpy.sqrt(numpy.nansum(inarr**2, axis=axis))
 
 def main():
     files = isois.get_latest('psp_isois-epilo_l2-ic')
