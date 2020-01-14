@@ -26,7 +26,7 @@ files = isois.get_latest('psp_isois-epilo_l2-ic')
 # Some test cases:
 # files = isois.get_latest('psp_isois-epilo_l2-ic')[:1]
 # files = isois.get_latest('psp_isois-epilo_l2-ic')[:10] # just first 10
-# files = isois.get_latest('psp_isois-epilo_l2-ic')[:10] # just first 10
+# files = isois.get_latest('psp_isois-epilo_l2-ic')[:100]
 
 elevation = numpy.choose(numpy.arange(80) % 10, (0, 1, 1, 0, 2, 2, 3, 3, 4, 5))
 # Where look directions have bad data (spurious TOF signal):
