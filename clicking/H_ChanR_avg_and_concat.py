@@ -26,6 +26,7 @@ files = isois.get_latest('psp_isois-epilo_l2-ic')
 # Some test cases:
 # files = isois.get_latest('psp_isois-epilo_l2-ic')[:1]
 # files = isois.get_latest('psp_isois-epilo_l2-ic')[:10] # just first 10
+# files = isois.get_latest('psp_isois-epilo_l2-ic')[:10] # just first 10
 
 elevation = numpy.choose(numpy.arange(80) % 10, (0, 1, 1, 0, 2, 2, 3, 3, 4, 5))
 # Where look directions have bad data (spurious TOF signal):
@@ -99,13 +100,6 @@ with warnings.catch_warnings():
 
                 # Step the counter:
                 j += 1
-
-# This is a nice sanity check, though it should definitionally be correct:
-# (We need the double indexing here because the first obj is a tuple, and the
-# second is an array of locations where the condition is true, the first of
-# which is the first occurence.)
-lastidx = numpy.where(epoch_mean == None)[0][0]
-assert j == lastidx
 
 # This will only work with the same version of python as when used with this script:
 with open('datetime_and_flux.pickle{}'.format(sys.version_info[0]), 'wb') as fp:
