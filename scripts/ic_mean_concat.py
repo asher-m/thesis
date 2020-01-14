@@ -102,5 +102,5 @@ with warnings.catch_warnings():
                 j += 1
 
 # This will only work with the same version of python as when used with this script:
-with open('datetime_and_flux.pickle{}'.format(sys.version_info[0]), 'wb') as fp:
+with open('../data/ic_event_datetime_flux.pickle{}'.format(sys.version_info[0]), 'wb') as fp:
     pickle.dump({'flux':flux_mean[:j], 'dflux':dflux_mean[:j], 'epoch':epoch_mean[:j]}, fp)

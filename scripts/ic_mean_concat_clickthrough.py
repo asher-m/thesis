@@ -5,6 +5,7 @@ or epoch and display using spacepy.plot.utils.EventClicker so events can be
 identified.
 """
 
+import datetime
 import matplotlib
 import matplotlib.cm
 import matplotlib.colors
@@ -15,7 +16,7 @@ import sys
 
 import spacepy.plot
 
-with open('datetime_and_flux.pickle{}'.format(sys.version_info[0]), 'rb') as fp:
+with open('../data/ic_event_datetime_flux.pickle{}'.format(sys.version_info[0]), 'rb') as fp:
     arrs = pickle.load(fp)
 
 # Flux:
@@ -59,5 +60,11 @@ plt.ylim((10, 2000))
 plt.colorbar()
 
 # This is preliminary, but might do max and half max..?
-c = spacepy.plot.utils.EventClicker(n_phases=2)
+c = spacepy.plot.utils.EventClicker(n_phases=2, interval=datetime.timedelta(days=30))
 c.analyze()
+
+# Lastly, dump the selected event times:
+with open('../data/ic_event_clickthrough_times_{}.pickle{}'\
+          .format(datetime.datetime.now().strftime('%F-%H%M%S'),
+                  sys.version_info[0]), 'wb') as fp:
+    pickle.dump(c.get_eventS(), fp)
