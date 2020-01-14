@@ -100,6 +100,13 @@ with warnings.catch_warnings():
                 # Step the counter:
                 j += 1
 
+# This is a nice sanity check, though it should definitionally be correct:
+# (We need the double indexing here because the first obj is a tuple, and the
+# second is an array of locations where the condition is true, the first of
+# which is the first occurence.)
+lastidx = numpy.where(epoch_mean == None)[0][0]
+assert j == lastidx
+
 # This will only work with the same version of python as when used with this script:
 with open('datetime_and_flux.pickle{}'.format(sys.version_info[0]), 'wb') as fp:
-    pickle.dump({'flux':flux_mean, 'dflux':dflux_mean, 'epoch':epoch_mean}, fp)
+    pickle.dump({'flux':flux_mean[:j], 'dflux':dflux_mean[:j], 'epoch':epoch_mean[:j]}, fp)
