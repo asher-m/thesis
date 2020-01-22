@@ -25,7 +25,9 @@ from ic_models import fisk_2008_eq38_modified as model
 
 def main(events_file):
     # Open the arrays:
-    with open('../data/ic_event_{}_flux.pickle{}'.format(VAR, sys.version_info[0]), 'rb') as fp:
+    with open('../data/ic_event_{}_flux.pickle{}'\
+              .format(VAR, sys.version_info[0]),
+              'rb') as fp:
         arrs = pickle.load(fp)
 
     # Flux:
@@ -53,6 +55,12 @@ def main(events_file):
         cdflux = dflux[startidx:stopidx]
         cenergy = energy[startidx:stopidx]
 
+        # Need to flip all of these if we're working with ChanT:
+        if VAR == 'ChanT':
+            cflux = cflux[:, ::-1]
+            cdflux = cdflux[:, ::-1]
+            cenergy = cenergy[:, ::-1]
+
         # Now average flux over the time that we're interested in:
         cflux = numpy.nanmean(cflux, axis=0)
         cdflux = uncert_prop(cdflux, axis=0)
@@ -76,31 +84,48 @@ def main(events_file):
         # Lastly, we can count the number of non-NaNs we have, so we know where
         # to stop the array trunking (so we don't try to plot NaNs):
         lenn = numpy.sum(~numpy.isnan(cenergy))
+        # And get the first not-nan so we know where to cut off the first few
+        # NaNs, (for ChanT, for example):
+        first_nonnan = numpy.where(~numpy.isnan(cenergy) == True)[0][0]
 
         # THEN cut down to the energies we're interested in studying:
-        e_startidx = numpy.searchsorted(cenergy[:lenn], FIT_TRUNK_LOWER)
-        e_stopidx = numpy.searchsorted(cenergy[:lenn], FIT_TRUNK_UPPER)
+        e_startidx = numpy.searchsorted(cenergy[first_nonnan:first_nonnan+lenn],
+                                        FIT_TRUNK_LOWER)
+        e_stopidx = numpy.searchsorted(cenergy[first_nonnan:first_nonnan+lenn],
+                                       FIT_TRUNK_UPPER)
 
-        # And then cut down everything:
-        cenergy = cenergy[:lenn][e_startidx:e_stopidx]
-        cflux = cflux[:lenn][e_startidx:e_stopidx]
-        cdflux = cdflux[:lenn][e_startidx:e_stopidx]
+        if VAR == 'ChanT' or VAR == 'ChanR':
+            e_startidx -= 1
+            e_stopidx += 1
 
         # We now have an array with 15 values, and an array with the uncertainties
         # in those values.  We should be able to fit this now.
         popt, pcov = scipy.optimize.curve_fit(model,
-                                              cenergy,
-                                              cflux,
-                                              sigma=cdflux,
+                                              cenergy[first_nonnan:first_nonnan+lenn][e_startidx:e_stopidx],
+                                              cflux[first_nonnan:first_nonnan+lenn][e_startidx:e_stopidx],
+                                              sigma=cdflux[first_nonnan:first_nonnan+lenn][e_startidx:e_stopidx],
                                               absolute_sigma=True)
         # I believe we DO in fact have absolute sigma, correct?  (See note
         # about this.)
-        # And just plot it for now:
-        # plt.plot(cenergy, cflux, 'ro')
-        plt.errorbar(cenergy, cflux, yerr=cdflux, color='red')
+
+        plt.figure(figsize=(10, 8))
 
         energy_range = numpy.linspace(0, 300, 100)
-        plt.plot(energy_range, model(energy_range, *popt))
+        plt.plot(energy_range,
+                 model(energy_range, *popt),
+                 label='Model ({:4G}) $\cdot$ exp({:4G})'.format(*popt))
+
+        # And just plot it for now:
+        # Plot the points used for fit:
+        plt.plot(cenergy[first_nonnan:first_nonnan+lenn][e_startidx:e_stopidx],
+                 cflux[first_nonnan:first_nonnan+lenn][e_startidx:e_stopidx],
+                 'k.',
+                 label='Points used for fit')
+        # Don't cut down energies because we don't care about just displaying:
+        plt.errorbar(cenergy[first_nonnan:first_nonnan+lenn],
+                     cflux[first_nonnan:first_nonnan+lenn],
+                     yerr=cdflux[first_nonnan:first_nonnan+lenn],
+                     color='red')
 
         plt.xlim((80, 200))
         plt.xscale('log')
@@ -110,15 +135,19 @@ def main(events_file):
         plt.yscale('log')
         plt.ylabel('j')
 
-        plt.title('Event {} to {}: exp. power: {:6f}'\
-                  .format(event[0, 0].strftime('%F %H%M'),
+        plt.legend(loc=1,
+                   prop={'family':'monospace'})
+
+        plt.title('{} Event: {} to {}'\
+                  .format(VAR,
+                          event[0, 0].strftime('%F %H%M'),
                           event[1, 0].strftime('%F %H%M'),
-                          popt[1]
                           )
                   )
 
-        plt.savefig('../figures/spectrum_{:02d}.png'.format(i))
+        plt.savefig('../figures/spectrum_{}_{:02d}.png'.format(VAR, i))
         plt.clf()
+
 
 if __name__ == "__main__":
     main(events_file=sys.argv[1])
