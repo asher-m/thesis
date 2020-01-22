@@ -12,6 +12,11 @@ import numpy
 # This can be ChanR, ChanT, or ChanP
 VAR = "ChanR"
 
+# Fitting parameters:
+FIT_TRUNK_LOWER = 100
+FIT_TRUNK_UPPER = 180
+
+
 def uncert_prop(inarr, axis):
     """ Propagate the uncertainty of numbers on some axis when averaging down
     along that axis. """

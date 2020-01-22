@@ -11,8 +11,7 @@ import scipy.optimize
 import sys
 
 # This import is a bit ugly, but it's less ugly than retyping this every time:
-from common import uncert_prop
-from ic_mean_concat_clickthrough import energy
+from common import uncert_prop, VAR
 from ic_models import fisk_2008_eq38 as model
 
 # This is pretty case-specific right now, but I can blow it up to be more
@@ -26,7 +25,7 @@ from ic_models import fisk_2008_eq38 as model
 
 def main(events_file):
     # Open the arrays:
-    with open('../data/ic_event_datetime_flux.pickle{}'.format(sys.version_info[0]), 'rb') as fp:
+    with open('../data/ic_event_{}_flux.pickle{}'.format(VAR, sys.version_info[0]), 'rb') as fp:
         arrs = pickle.load(fp)
 
     # Flux:
@@ -35,6 +34,8 @@ def main(events_file):
     dflux = arrs['dflux']
     # Datetime/epoch:
     epoch = arrs['epoch']
+    # Energy bins:
+    energy = arrs['energy']
 
     # Open the saved event times:
     with open(events_file, 'rb') as fp:
@@ -47,19 +48,37 @@ def main(events_file):
         # Cut all vars in time that we're looking at:
         startidx = numpy.searchsorted(epoch, event[0, 0])
         stopidx = numpy.searchsorted(epoch, event[1, 0])
+
         cflux = flux[startidx:stopidx]
         cdflux = dflux[startidx:stopidx]
+        cenergy = energy[startidx:stopidx]
 
         # Now average flux over the time that we're interested in:
         cflux = numpy.nanmean(cflux, axis=0)
         cdflux = uncert_prop(cdflux, axis=0)
 
+        # Make sure energy is consistent within this time range.
+        # This is a different condition than tried in the mean-concat script,
+        # because that checks within hours.  This checks between hours
+        # (and therefore, possibly files as well).
+        assert numpy.all((cenergy == cenergy[0, 0, :])[~numpy.isnan(cenergy)])
+        # If this works (because we have the same binning in the file)
+        # we can just use the first set of not-all-NaNs bins
+        # (because they're all the same):
+        nonnan = numpy.where(numpy.any(~numpy.isnan(cenergy[:, 0]), axis=1) \
+                             == True)[0][0]
+        cenergy = cenergy[nonnan, 0, :]
+
+        # Lastly, we can count the number of non-NaNs we have, so we know where
+        # to stop the array trunking (so we don't try to plot NaNs):
+        lenn = numpy.sum(~numpy.isnan(cenergy))
+
         # We now have an array with 15 values, and an array with the uncertainties
         # in those values.  We should be able to fit this now.
         popt, pcov = scipy.optimize.curve_fit(model,
-                                              energy[:9],  # ONLY fitting first 9 energies!
-                                              cflux[:9],  # That's because that's about the range that we have any sensible data for.
-                                              sigma=cdflux[:9],
+                                              cenergy[:lenn],  # ONLY fitting first 9 energies!
+                                              cflux[:lenn],  # That's because that's about the range that we have any sensible data for.
+                                              sigma=cdflux[:lenn],
                                               absolute_sigma=True)
         # I believe we DO in fact have absolute sigma, correct?  (See note
         # about this.)
