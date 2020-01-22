@@ -14,7 +14,7 @@ import pickle
 import sys
 import warnings
 
-from common import uncert_prop
+from common import uncert_prop, VAR
 import isois
 import spacepy.pycdf
 
@@ -24,9 +24,6 @@ import spacepy.pycdf
 # WE ASSUME EVERY FILE IS ONLY 24 HOURS!
 INT_PER_DAY = 24
 # For minutes, for example, this would be 1440.
-
-# This can be ChanR, ChanT, or ChanP
-VAR = "ChanR"
 
 
 def main():
