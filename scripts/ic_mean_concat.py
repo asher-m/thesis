@@ -107,13 +107,18 @@ def main():
                         epoch_mean[j] = starttime + datetime.timedelta(days=1) / INT_PER_DAY / 2
                         # If it's constant over the entire file, which we've
                         # checked, we can just use the first one:
-                        energy_agg[j] = energy[0, 0, :]
+                        if startidx < energy.shape[0]:
+                            energy_agg[j] = energy[startidx, 0, :]
+                        else:
+                            energy_agg[j] = numpy.nan
 
                         # Step the counter:
                         j += 1
 
     # This will only work with the same version of python as when used with this script:
-    with open('../data/ic_event_datetime_flux.pickle{}'.format(sys.version_info[0]), 'wb') as fp:
+    with open('../data/ic_event_{}_flux.pickle{}'.format(VAR,
+                                                         sys.version_info[0]),
+              'wb') as fp:
         pickle.dump({'flux':flux_mean[:j],
                      'dflux':dflux_mean[:j],
                      'epoch':epoch_mean[:j],
