@@ -12,6 +12,8 @@ import numpy
 # This can be ChanR, ChanT, or ChanP
 VAR = "ChanR"
 
+assert VAR in ['ChanT', 'ChanR', 'ChanP']
+
 # Fitting parameters:
 FIT_TRUNK_LOWER = 100
 FIT_TRUNK_UPPER = 180
