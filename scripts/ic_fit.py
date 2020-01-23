@@ -12,7 +12,7 @@ import sys
 
 # This import is a bit ugly, but it's less ugly than retyping this every time:
 from common import uncert_prop, VAR, FIT_TRUNK_LOWER, FIT_TRUNK_UPPER
-from ic_models import fisk_2008_eq38_modified as model
+from ic_models import fisk_2008_eq38_modified_centered as model
 
 # This is pretty case-specific right now, but I can blow it up to be more
 # general later.
@@ -119,10 +119,13 @@ def main(events_file):
             # I believe we DO in fact have absolute sigma, correct?  (See note
             # about this.)
 
-            energy_range = numpy.linspace(XLIM_LOWER, XLIM_UPPER, 100)
+            energy_range = numpy.logspace(numpy.log10(XLIM_LOWER),
+                                          numpy.log10(XLIM_UPPER),
+                                          1000)
+            fmtstr = 'Model params [' + '{:4G}, ' * (len(popt) - 1) + '{:4G}' + ']'
             plt.plot(energy_range,
                      model(energy_range, *popt),
-                     label='Model ({:4G}) $\cdot$ T^{:4G}'.format(*popt))
+                     label=fmtstr.format(*popt))
         except:
             print('='*80)
             print('{:^80}'.format('Something failed on optimization {}.'.format(i)))
