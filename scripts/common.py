@@ -10,17 +10,20 @@ import numpy
 
 
 # This can be ChanR, ChanT, or ChanP
-VAR = "ChanT"
+VAR = "ChanP"
 
 assert VAR in ['ChanT', 'ChanR', 'ChanP']
 
 # Fitting parameters:
 if VAR == 'ChanT':
-    FIT_TRUNK_LOWER = 40
-    FIT_TRUNK_UPPER = 300
-else:
-    FIT_TRUNK_LOWER = 100
-    FIT_TRUNK_UPPER = 180
+    FIT_TRUNK_LOWER = 37
+    FIT_TRUNK_UPPER = 400
+elif VAR == 'ChanR':
+    FIT_TRUNK_LOWER = 95
+    FIT_TRUNK_UPPER = 200
+elif VAR == 'ChanP':
+    FIT_TRUNK_LOWER = 95
+    FIT_TRUNK_UPPER = 305
 
 
 def uncert_prop(inarr, axis):

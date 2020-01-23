@@ -98,13 +98,6 @@ def main(events_file):
         e_stopidx = numpy.searchsorted(cenergy[first_nonnan:first_nonnan+lenn],
                                        FIT_TRUNK_UPPER)
 
-        if VAR == 'ChanT' or VAR == 'ChanR':
-            e_startidx -= 1
-            e_stopidx += 1
-
-        if VAR == 'ChanP':
-            e_startidx -= 1
-
         # Set this up now in case the optimization doesn't fail:
         plt.figure(figsize=(10, 8))
 
@@ -164,7 +157,8 @@ def main(events_file):
 
         plt.tight_layout()
 
-        plt.savefig('../figures/spectrum_{}_{:02d}.png'.format(VAR, i))
+        plt.savefig('../figures/spectrum_{}_{:02d}.png'.format(VAR, i),
+                    dpi=300)
         plt.close()
 
 
