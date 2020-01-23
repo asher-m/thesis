@@ -21,6 +21,10 @@ from ic_models import fisk_2008_eq38_modified as model
 # base doesn't make a difference because I'll be averaging down along the time
 # axis again anyways.
 
+XLIM_LOWER = 30
+XLIM_UPPER = 500
+YLIM_LOWER = 1e-3
+YLIM_UPPER = 10
 
 
 def main(events_file):
@@ -98,22 +102,31 @@ def main(events_file):
             e_startidx -= 1
             e_stopidx += 1
 
-        # We now have an array with 15 values, and an array with the uncertainties
-        # in those values.  We should be able to fit this now.
-        popt, pcov = scipy.optimize.curve_fit(model,
-                                              cenergy[first_nonnan:first_nonnan+lenn][e_startidx:e_stopidx],
-                                              cflux[first_nonnan:first_nonnan+lenn][e_startidx:e_stopidx],
-                                              sigma=cdflux[first_nonnan:first_nonnan+lenn][e_startidx:e_stopidx],
-                                              absolute_sigma=True)
-        # I believe we DO in fact have absolute sigma, correct?  (See note
-        # about this.)
+        if VAR == 'ChanP':
+            e_startidx -= 1
 
+        # Set this up now in case the optimization doesn't fail:
         plt.figure(figsize=(10, 8))
 
-        energy_range = numpy.linspace(0, 300, 100)
-        plt.plot(energy_range,
-                 model(energy_range, *popt),
-                 label='Model ({:4G}) $\cdot$ T^{:4G}'.format(*popt))
+        try:
+            # We now have an array with 15 values, and an array with the uncertainties
+            # in those values.  We should be able to fit this now.
+            popt, pcov = scipy.optimize.curve_fit(model,
+                                                  cenergy[first_nonnan:first_nonnan+lenn][e_startidx:e_stopidx],
+                                                  cflux[first_nonnan:first_nonnan+lenn][e_startidx:e_stopidx],
+                                                  sigma=cdflux[first_nonnan:first_nonnan+lenn][e_startidx:e_stopidx],
+                                                  absolute_sigma=True)
+            # I believe we DO in fact have absolute sigma, correct?  (See note
+            # about this.)
+
+            energy_range = numpy.linspace(XLIM_LOWER, XLIM_UPPER, 100)
+            plt.plot(energy_range,
+                     model(energy_range, *popt),
+                     label='Model ({:4G}) $\cdot$ T^{:4G}'.format(*popt))
+        except:
+            print('='*80)
+            print('{:^80}'.format('Something failed on optimization {}.'.format(i)))
+            print('='*80)
 
         # And just plot it for now:
         # Plot the points used for fit:
@@ -127,11 +140,12 @@ def main(events_file):
                      yerr=cdflux[first_nonnan:first_nonnan+lenn],
                      color='red')
 
-        plt.xlim((80, 200))
+        plt.xlim((XLIM_LOWER, XLIM_UPPER))
+        plt.ylim((YLIM_LOWER, YLIM_UPPER))
+
         plt.xscale('log')
         plt.xlabel('Energy (keV)')
 
-        plt.ylim((1e-3, 10))
         plt.yscale('log')
         plt.ylabel('j')
 
@@ -145,8 +159,10 @@ def main(events_file):
                           )
                   )
 
+        plt.tight_layout()
+
         plt.savefig('../figures/spectrum_{}_{:02d}.png'.format(VAR, i))
-        plt.clf()
+        plt.close()
 
 
 if __name__ == "__main__":

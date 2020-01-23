@@ -21,3 +21,11 @@ def fisk_2008_eq38_modified(e, j_0, k):
     Changed a bit.
     """
     return j_0 * e**k
+
+def fisk_2008_eq38_modified_centered(e, j_0, e_0, k):
+    """
+    Fisk & Gloeckler 2008 Eq. 38
+    Note that I've added a translation parameter to the exponential.
+    Changed a bit.
+    """
+    return j_0 * (e - e_0)**k
