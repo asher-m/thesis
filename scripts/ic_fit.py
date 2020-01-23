@@ -113,7 +113,7 @@ def main(events_file):
         energy_range = numpy.linspace(0, 300, 100)
         plt.plot(energy_range,
                  model(energy_range, *popt),
-                 label='Model ({:4G}) $\cdot$ exp({:4G})'.format(*popt))
+                 label='Model ({:4G}) $\cdot$ T^{:4G}'.format(*popt))
 
         # And just plot it for now:
         # Plot the points used for fit:
