@@ -7,6 +7,7 @@ variables along some axis.
 # There are ie ic pe pc files
 # Looks like I should use 'ic' files
 
+import argparse
 import datetime
 import numpy
 import os
@@ -14,7 +15,7 @@ import pickle
 import sys
 import warnings
 
-from common import uncert_prop, VAR
+from common import uncert_prop
 import isois
 import spacepy.pycdf
 
@@ -26,7 +27,7 @@ INT_PER_DAY = 24
 # For minutes, for example, this would be 1440.
 
 
-def main():
+def main(varname):
     files = isois.get_latest('psp_isois-epilo_l2-ic')
     # Some test cases:
     # files = isois.get_latest('psp_isois-epilo_l2-ic')[:1]
@@ -39,7 +40,7 @@ def main():
     # issue), leave this the maximum size possible AND DON'T exclude invalid
     # numbers.  Disciminate in plotting.
     with spacepy.pycdf.CDF(files[0]) as f:
-        lenn = f['H_{}_Energy'.format(VAR)][...].shape[2]
+        lenn = f['H_{}_Energy'.format(varname)][...].shape[2]
 
     # Initialize these as the right size to avoid copying the array every time:
     maxn = len(files) * INT_PER_DAY
@@ -60,15 +61,15 @@ def main():
 
             # Open each file:
             with spacepy.pycdf.CDF(ff) as f:
-                flux = f['H_Flux_{}'.format(VAR)][...]
+                flux = f['H_Flux_{}'.format(varname)][...]
                 flux[flux < 0] = numpy.nan  # Cut out fill...
-                dflux = f['H_Flux_{}_DELTA'.format(VAR)][...]
+                dflux = f['H_Flux_{}_DELTA'.format(varname)][...]
                 dflux[dflux < 0] = numpy.nan
-                energy = f['H_{}_Energy'.format(VAR)][...]
+                energy = f['H_{}_Energy'.format(varname)][...]
                 energy[energy < 0] = numpy.nan
 
                 # Get the epoch:
-                epoch = f['Epoch_{}'.format(VAR)][...]
+                epoch = f['Epoch_{}'.format(varname)][...]
 
                 if len(epoch) > 0:  # Apparently there are some files where we have nothing...
                     for i in range(INT_PER_DAY):
@@ -113,7 +114,7 @@ def main():
                         j += 1
 
     # This will only work with the same version of python as when used with this script:
-    with open('../data/ic_event_{}_flux.pickle{}'.format(VAR,
+    with open('../data/ic_event_{}_flux.pickle{}'.format(varname,
                                                          sys.version_info[0]),
               'wb') as fp:
         pickle.dump({'flux':flux_mean[:j],
@@ -123,4 +124,20 @@ def main():
                     fp)
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(help='name of the variable to process, can be'
+                        ' \'ChanP\', \'ChanT\', \'ChanR\', or \'all\'',
+                        dest='varname',
+                        action='store')
+    args = parser.parse_args()
+    # Make sure we have something we can look at. If this assertion fails,
+    # it's because we received an invalid varname.
+    assert args.varname in ('ChanP', 'ChanT', 'ChanR', 'all')
+    if args.varname != 'all':
+        main(args.varname)
+    else:
+        for varname in ('ChanP', 'ChanT', 'ChanR'):
+            print('='*80)
+            print('Starting {}...'.format(varname))
+            print('='*80)
+            main(varname)

@@ -3,6 +3,7 @@
 Perform a fit on the data according to some model, as provided.
 """
 
+import argparse
 import matplotlib.pyplot as plt
 import numpy
 import pickle
@@ -163,4 +164,9 @@ def main(events_file):
 
 
 if __name__ == "__main__":
-    main(events_file=sys.argv[1])
+    parser = argparse.ArgumentParser()
+    parser.add_argument(help='events definition file (from clickthrough)',
+                        dest='events_file',
+                        action='store')
+    args = parser.parse_args()
+    main(args.events_file)
