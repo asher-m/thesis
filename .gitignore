@@ -3,4 +3,5 @@
 *.pickle*
 data
 /data/*
+figures
 /figures/*
