@@ -9,6 +9,12 @@ import numpy
 
 
 
+PLOTTING_XLIM_LOWER = 30
+PLOTTING_XLIM_UPPER = 500
+PLOTTING_YLIM_LOWER = 1e-3
+PLOTTING_YLIM_UPPER = 10
+
+
 def uncert_prop(inarr, axis):
     """ Propagate the uncertainty of numbers on some axis when averaging down
     along that axis. """

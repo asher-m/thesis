@@ -12,7 +12,8 @@ import scipy.optimize
 import sys
 
 # This import is a bit ugly, but it's less ugly than retyping this every time:
-from common import uncert_prop, nan_cut, energy_trunc
+from common import uncert_prop, nan_cut, energy_trunc, PLOTTING_XLIM_LOWER, \
+    PLOTTING_XLIM_UPPER, PLOTTING_YLIM_LOWER, PLOTTING_YLIM_UPPER
 from ic_models import fisk_2008_eq38_modified_centered as model
 
 # This is pretty case-specific right now, but I can blow it up to be more
@@ -22,10 +23,6 @@ from ic_models import fisk_2008_eq38_modified_centered as model
 # base doesn't make a difference because I'll be averaging down along the time
 # axis again anyways.
 
-XLIM_LOWER = 30
-XLIM_UPPER = 500
-YLIM_LOWER = 1e-3
-YLIM_UPPER = 10
 
 
 def main(events_file, varname):
@@ -122,8 +119,8 @@ def main(events_file, varname):
                      yerr=cdflux[first_nonnan:last_nonnan],
                      color='red')
 
-        plt.xlim((XLIM_LOWER, XLIM_UPPER))
-        plt.ylim((YLIM_LOWER, YLIM_UPPER))
+        plt.xlim((PLOTTING_XLIM_LOWER, PLOTTING_XLIM_UPPER))
+        plt.ylim((PLOTTING_YLIM_LOWER, PLOTTING_YLIM_UPPER))
 
         plt.xscale('log')
         plt.xlabel('Energy (keV)')
