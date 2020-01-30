@@ -95,7 +95,7 @@ def main(events_file, varname):
             # about this.)
 
             energy_range = numpy.logspace(numpy.log10(PLOTTING_XLIM_LOWER),
-                                          numpy.log10(PLOTTING_YLIM_UPPER),
+                                          numpy.log10(PLOTTING_XLIM_UPPER),
                                           1000)
             fmtstr = 'Model params [' + '{:4G}, ' * (len(popt) - 1) + '{:4G}' + ']'
             plt.plot(energy_range,
