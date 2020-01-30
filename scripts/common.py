@@ -73,4 +73,5 @@ def energy_trunc(varname):
     elif varname == 'ChanR':
         return 95, 200
     elif varname == 'ChanP':
-        return 95, 305
+        # From talking to Jon, looks like P should be ~95 to 200.
+        return 95, 200

@@ -14,7 +14,7 @@ import sys
 # This import is a bit ugly, but it's less ugly than retyping this every time:
 from common import uncert_prop, nan_cut, energy_trunc, PLOTTING_XLIM_LOWER, \
     PLOTTING_XLIM_UPPER, PLOTTING_YLIM_LOWER, PLOTTING_YLIM_UPPER
-from ic_models import fisk_2008_eq38_modified_centered as model
+from ic_models import fisk_2008_eq38_modified as model
 
 # This is pretty case-specific right now, but I can blow it up to be more
 # general later.
