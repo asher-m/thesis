@@ -4,12 +4,10 @@ Script to produce plots and fits from 1-count rates for ChanP, ChanR, and ChanT
 rates.
 """
 
+import argparse
 import datetime
-import matplotlib
 import matplotlib.pyplot as plt
 import numpy
-import os
-import os.path
 import re
 
 import isois
@@ -19,9 +17,6 @@ import isois.time
 from common import PLOTTING_XLIM_LOWER, PLOTTING_XLIM_UPPER, \
     PLOTTING_YLIM_LOWER, PLOTTING_YLIM_UPPER
 
-
-
-CALFILE = "/home/share/docs/epi-lo/epilo-calibration-table/20190219/EPILOCalibration.sqlite"
 
 
 # def tupleit(l):
@@ -48,9 +43,9 @@ def get_change_indices(inarr):
            indices.append(where[0])
     return indices
 
-def main():
+def main(calfile):
     # Open the calfile so we can get information:
-    cal = isois.epilo_l2.CalFile(CALFILE)
+    cal = isois.epilo_l2.CalFile(calfile)
     # Get a list of all available files so we can find the first/last dates:
     files = isois.get_latest('psp_isois-epilo_l2-ic')
     time_first = datetime.datetime.strptime(re.match("^.*([0-9]{8}).*$",
@@ -123,4 +118,12 @@ def main():
             plt.close()
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(help='epilo calfile, a .sqlite',
+                        dest='calfile',
+                        action='store',
+                        default='/home/share/docs/epi-lo/epilo-calibration-'
+                        'table/20190219/EPILOCalibration.sqlite',
+                        nargs='?')
+    args = parser.parse_args()
+    main(args.calfile)
