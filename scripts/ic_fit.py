@@ -94,8 +94,8 @@ def main(events_file, varname):
             # I believe we DO in fact have absolute sigma, correct?  (See note
             # about this.)
 
-            energy_range = numpy.logspace(numpy.log10(XLIM_LOWER),
-                                          numpy.log10(XLIM_UPPER),
+            energy_range = numpy.logspace(numpy.log10(PLOTTING_XLIM_LOWER),
+                                          numpy.log10(PLOTTING_YLIM_UPPER),
                                           1000)
             fmtstr = 'Model params [' + '{:4G}, ' * (len(popt) - 1) + '{:4G}' + ']'
             plt.plot(energy_range,
