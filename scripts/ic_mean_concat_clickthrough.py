@@ -72,7 +72,7 @@ def main(click=False, review=None):
 
         # Now we can finally plot these:
         plt.pcolormesh(epoch,
-                       numpy.arange(plotting_at, last_nonnan - first_nonnan + plotting_at),
+                       energy[0, first_nonnan:last_nonnan] * 10**plotting_at,
                        flux[:, first_nonnan:last_nonnan].T,
                        cmap=cmap,
                        norm=matplotlib.colors.LogNorm(),
@@ -84,10 +84,13 @@ def main(click=False, review=None):
         # each one when we review the events on one canvas.
         # THIS IS NEEDED because EventClicker is made to work on one axis
         # (matplotlib object) and doesn't yet work over multiple.
-        plotting_at += last_nonnan - first_nonnan + 5
+        # import pdb; pdb.set_trace()
+        plotting_at += numpy.ceil(numpy.log10(energy[0, last_nonnan - 1]) \
+                                  - numpy.log10(energy[0, first_nonnan])) + 1
 
     plt.colorbar()
-    plt.ylim((-5, plotting_at))
+    plt.ylim((10, 10**plotting_at))
+    plt.yscale('log')
 
     # Now we can call the review or clickthrough function:
     if click is True:
@@ -118,8 +121,8 @@ def reviewthrough(events_file, plotting_at):
     for i, event in enumerate(e):
         startx = event[0, 0]
         stopx = event[1, 0]
-        plt.vlines(startx, -5, plotting_at, color='red')
-        plt.vlines(stopx, -5, plotting_at, color='cyan')
+        plt.vlines(startx, 10, 10**plotting_at, color='red')
+        plt.vlines(stopx, 10, 10**plotting_at, color='cyan')
 
     plt.show()
 
