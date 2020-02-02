@@ -6,6 +6,8 @@ rates.
 
 import argparse
 import datetime
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy
 import re
@@ -78,9 +80,9 @@ def main(calfile):
             # larger bounds instead.  Also, remove all these static plotting
             # limits of switching back to the one-over, etc...
             # plt.xlim((PLOTTING_XLIM_LOWER, PLOTTING_XLIM_UPPER))
-            plt.xlim((1, 1e5))
+            # plt.xlim((1, 1e5))
             # plt.ylim((PLOTTING_YLIM_LOWER, PLOTTING_YLIM_UPPER))
-            plt.ylim((1e-5, 1))
+            # plt.ylim((1e-5, 1))
             plt.xscale('log')
             plt.xlabel('Energy (keV)')
             plt.yscale('log')
@@ -95,9 +97,7 @@ def main(calfile):
 
             # Need to mean over axis 0 (after indexing, this is the look dir.
             # axis), because that's what we're doing elsewhere:
-            # counts = numpy.nanmean(1 / (calinfo['g'][idx] * calinfo['eff'][idx]\
-                # * (calinfo['ehi'][idx] - calinfo['elo'][idx])), axis=0)
-            counts = numpy.nanmean((calinfo['g'][idx] * calinfo['eff'][idx]\
+            counts = numpy.nanmean(1 / (calinfo['g'][idx] * calinfo['eff'][idx]\
                 * (calinfo['ehi'][idx] - calinfo['elo'][idx])), axis=0)
             # NOTE: If changing back, MAKE SURE TO REMOVE STATIC LIMITS ON PLOT!
 
