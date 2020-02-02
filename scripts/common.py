@@ -66,12 +66,15 @@ def energy_trunc(varname):
     type.
 
 
-    Returns as (lower_bound, upper_bound)."""
+    Returns as (lower_bound, upper_bound).
+
+    Some of these parameters are ignored when fitting in the fit script.  See
+    the fit function in there. """
     # Fitting parameters:
     if varname == 'ChanT':
-        return 37, 400
+        return 37, 205
     elif varname == 'ChanR':
-        return 95, 200
+        return 95, 205
     elif varname == 'ChanP':
         # From talking to Jon, looks like P should be ~95 to 200.
-        return 95, 200
+        return 95, 205

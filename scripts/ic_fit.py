@@ -25,6 +25,190 @@ from ic_models import fisk_2008_eq38_modified as model
 
 
 
+def fit_prep(varname, startidx, stopidx, energy, flux, dflux):
+    """ Function to unify how we're slicing energy, flux, and dflux,
+    just so it doesn't need to be copied everywhere."""
+    cflux = flux[startidx:stopidx]
+    cdflux = dflux[startidx:stopidx]
+    cenergy = energy[startidx:stopidx]
+
+    # Need to flip all of these if we're working with ChanT:
+    if varname == 'ChanT':
+        cflux = cflux[:, ::-1]
+        cdflux = cdflux[:, ::-1]
+        cenergy = cenergy[:, ::-1]
+
+    # Now average flux over the time that we're interested in:
+    cflux = numpy.nanmean(cflux, axis=0)
+    cdflux = uncert_prop(cdflux, axis=0)
+
+    # Cut down the energy array to just the non-NaN elements (and find
+    # first/last indices of non-nan elements for the second axis).
+    cenergy, _, first_nonnan, last_nonnan = nan_cut(cenergy)
+
+    return cenergy[first_nonnan:last_nonnan], \
+        cflux[first_nonnan:last_nonnan], \
+        cdflux[first_nonnan:last_nonnan]
+
+def fit(varname, model, epoch, energy, flux, dflux, starttime, stoptime, idx=None):
+    """ Function to perform fit of the data per varname, according to a
+    bunch of different options.
+
+    Returns a list like:
+        [("<human_name_0>", cenergy_0, cflux_0, cdflux_0, (popt_0...), (pcov_0...)),
+         ("<human_name_1>", cenergy_1, cflux_1, cdflux_1, (popt_1...), (pcov_1...))
+         ...]
+    """
+    how = {'ChanT': [
+                        {  # Blank dict so we still make the normal plot.
+                        },
+                        {  # Fit of full time range, trunc'ed e range:
+                            'e_range':(95, 205),
+                        },
+                        {  # Fit of partial time range, trunc'ed e range:
+                            'e_range':(95, 205),
+                            't_range':(0.25, 0.75)
+                        },
+                        {  # Fit of partial time range, full e range:
+                            'e_range':(37, 205),
+                            't_range':(0.25, 0.75)
+                        },
+                    ],
+           'ChanP': [
+                        {  # Blank dict so we still make the normal plot.
+                        },
+                        {  # Fit of partial time range, full e range (for P):
+                            'e_range':(95, 205),
+                            't_range':(0.25, 0.75)
+                        },
+                    ]
+        }
+    """ Dictionary of how to plot each varname.  All plots for a particular
+    varname are produced.
+
+    These parameters override parameters in common. """
+
+    fits = []
+
+    if varname in how:
+        for params in how[varname]:
+            if 't_range' in params:
+                # Adjust the st*times according to how the dict says:
+                timedelta = stoptime - starttime
+                starttime_adj = starttime + timedelta * params['t_range'][0]
+                stoptime_adj = starttime + timedelta * params['t_range'][1]
+                # Then do the lookup as normal:
+                startidx = numpy.searchsorted(epoch, starttime_adj)
+                stopidx = numpy.searchsorted(epoch, stoptime_adj)
+            else:
+                # Just hand back what it'd normally be:
+                startidx = numpy.searchsorted(epoch, starttime)
+                stopidx = numpy.searchsorted(epoch, stoptime)
+
+            # Do all the cutting and flipping and stuff:
+            cenergy, cflux, cdflux = fit_prep(varname,
+                                              startidx,
+                                              stopidx,
+                                              energy,
+                                              flux,
+                                              dflux)
+
+            if 'e_range' in params:
+                fit_lower_bound, fut_upper_bound = params['e_range']
+            else:
+                # Get the energy trunc's (in real numbers, get idx's next):
+                fit_lower_bound, fit_upper_bound = energy_trunc(varname)
+
+            # Cut down to the energies we're interested in studying:
+            e_startidx = numpy.searchsorted(cenergy, fit_lower_bound)
+            e_stopidx = numpy.searchsorted(cenergy, fit_upper_bound)
+
+            try:
+                # Now we can go ahead and do the fit:
+                popt, pcov = scipy.optimize.curve_fit(model,
+                                                      cenergy[e_startidx:e_stopidx],
+                                                      cflux[e_startidx:e_stopidx],
+                                                      sigma=cdflux[e_startidx:e_stopidx],
+                                                      absolute_sigma=True)
+                # I believe we DO in fact have absolute sigma, correct?  (See note
+                # about this.)
+
+                energy_range = numpy.logspace(numpy.log10(PLOTTING_XLIM_LOWER),
+                                              numpy.log10(PLOTTING_XLIM_UPPER),
+                                              1000)
+
+            except:
+                print('='*80)
+                print('{:^80}'.format('Something failed on optimization for event {:02d}'.format(idx)))
+                print('{:^80}'.format(' with params {}.'.format(params)))
+                print('='*80)
+                continue
+
+            # Finally, we can append everything to the list that we found.
+            # First make the human name:
+            if 't_range' in params:  # Get the t_range.
+                t_range = params['t_range']
+            else:
+                t_range = (0., 1.)
+            if 'e_range' in params:  # Get the e_range.
+                e_range = params['e_range']
+            else:
+                e_range = energy_trunc(varname)
+            human_name = 't_range: {}, e_range: {}'.format(t_range, e_range)
+            # We have everything else, so we can just add it to the list:
+            fits.append((human_name,
+                         cenergy[e_startidx:e_stopidx],
+                         cflux[e_startidx:e_stopidx],
+                         cdflux[e_startidx:e_stopidx],
+                         popt,
+                         pcov))
+
+    else:
+        # Because we don't have to treat this var in any special manner,
+        # we can handle it like we did before:
+        startidx = numpy.searchsorted(epoch, starttime)
+        stopidx = numpy.searchsorted(epoch, stoptime)
+
+        # Do all the cutting and flipping and stuff:
+        cenergy, cflux, cdflux = fit_prep(varname,
+                                          startidx,
+                                          stopidx,
+                                          energy,
+                                          flux,
+                                          dflux)
+
+        # Cut down to the energies we're interested in studying:
+        e_startidx = numpy.searchsorted(cenergy, fit_lower_bound)
+        e_stopidx = numpy.searchsorted(cenergy, fit_upper_bound)
+
+        try:
+            # Now we can go ahead and do the fit:
+            popt, pcov = scipy.optimize.curve_fit(model,
+                                                  cenergy[e_startidx:e_stopidx],
+                                                  cflux[e_startidx:e_stopidx],
+                                                  sigma=cdflux[e_startidx:e_stopidx],
+                                                  absolute_sigma=True)
+
+        except:
+            print('='*80)
+            print('{:^80}'.format('Something failed on optimization {}.'.format(idx)))
+            print('='*80)
+
+        # Finally, we can append everything to the list that we found.
+        t_range = (0., 1.)
+        e_range = energy_trunc(varname)
+        human_name = 't_range: {}, e_range: {}'.format(t_range, e_range)
+        # We have everything else, so we can just add it to the list:
+        fits.append((human_name,
+                     cenergy[e_startidx:e_stopidx],
+                     cflux[e_startidx:e_stopidx],
+                     cdflux[e_startidx:e_stopidx],
+                     popt,
+                     pcov))
+
+    return fits
+
+
 def main(events_file, varname):
     # Open the arrays:
     with open('../data/ic_event_{}_flux.pickle{}'\
@@ -41,8 +225,8 @@ def main(events_file, varname):
     # Energy bins:
     energy = arrs['energy']
 
-    # Also get the energy trunc's:
-    fit_lower_bound, fit_upper_bound = energy_trunc(varname)
+    # # Also get the energy trunc's:
+    # fit_lower_bound, fit_upper_bound = energy_trunc(varname)
 
     # Open the saved event times:
     with open(events_file, 'rb') as fp:
@@ -53,71 +237,64 @@ def main(events_file, varname):
     # Now, for each event (row) in e:
     for i, event in enumerate(e):
         # Cut all vars in time that we're looking at:
-        startidx = numpy.searchsorted(epoch, event[0, 0])
-        stopidx = numpy.searchsorted(epoch, event[1, 0])
-
-        cflux = flux[startidx:stopidx]
-        cdflux = dflux[startidx:stopidx]
-        cenergy = energy[startidx:stopidx]
-
-        # Need to flip all of these if we're working with ChanT:
-        if varname == 'ChanT':
-            cflux = cflux[:, ::-1]
-            cdflux = cdflux[:, ::-1]
-            cenergy = cenergy[:, ::-1]
-
-        # Now average flux over the time that we're interested in:
-        cflux = numpy.nanmean(cflux, axis=0)
-        cdflux = uncert_prop(cdflux, axis=0)
-
-        # Cut down the energy array to just the non-NaN elements (and find
-        # first/last indices of non-nan elements for the second axis).
-        cenergy, _, first_nonnan, last_nonnan = nan_cut(cenergy)
-        # Note: We're throwing away the pre-cutdown array because it makes
-        # it more explicit everywhere else.
-
-        # THEN cut down to the energies we're interested in studying:
-        e_startidx = numpy.searchsorted(cenergy[first_nonnan:last_nonnan], fit_lower_bound)
-        e_stopidx = numpy.searchsorted(cenergy[first_nonnan:last_nonnan], fit_upper_bound)
+        starttime = event[0, 0]
+        stoptime = event[1, 0]
 
         # Set this up now in case the optimization doesn't fail:
         plt.figure(figsize=(10, 8))
 
-        try:
-            # We now have an array with 15 values, and an array with the uncertainties
-            # in those values.  We should be able to fit this now.
-            popt, pcov = scipy.optimize.curve_fit(model,
-                                                  cenergy[first_nonnan:last_nonnan][e_startidx:e_stopidx],
-                                                  cflux[first_nonnan:last_nonnan][e_startidx:e_stopidx],
-                                                  sigma=cdflux[first_nonnan:last_nonnan][e_startidx:e_stopidx],
-                                                  absolute_sigma=True)
-            # I believe we DO in fact have absolute sigma, correct?  (See note
-            # about this.)
+        # Do the fit here:
+        fits = fit(varname, model, epoch, energy, flux,
+                   dflux, starttime, stoptime, i)
 
-            energy_range = numpy.logspace(numpy.log10(PLOTTING_XLIM_LOWER),
-                                          numpy.log10(PLOTTING_XLIM_UPPER),
-                                          1000)
-            fmtstr = 'Model params [' + '{:4G}, ' * (len(popt) - 1) + '{:4G}' + ']'
-            plt.plot(energy_range,
-                     model(energy_range, *popt),
-                     label=fmtstr.format(*popt))
-        except:
-            print('='*80)
-            print('{:^80}'.format('Something failed on optimization {}.'.format(i)))
-            print('='*80)
+        energy_range = numpy.logspace(numpy.log10(PLOTTING_XLIM_LOWER),
+                                      numpy.log10(PLOTTING_XLIM_UPPER),
+                                      1000)
 
-        # And just plot it for now:
-        # Plot the points used for fit:
-        plt.plot(cenergy[first_nonnan:last_nonnan][e_startidx:e_stopidx],
-                 cflux[first_nonnan:last_nonnan][e_startidx:e_stopidx],
-                 'k.',
-                 label='Points used for fit')
+        for f in fits:
+            humanname, e, f, df, popt, pcov = f
+            fmtstr = 'fit: {}; params: [' + '{:4G}, ' * (len(popt) - 1) + '{:4G}' + ']'
+            p = plt.plot(energy_range,
+                         model(energy_range, *popt),
+                         label=fmtstr.format(humanname, *popt))
+            # Also plot the points used for the fit:
+            plt.plot(e, f, "o", color=p[-1].get_color())
+
+
+        startidx = numpy.searchsorted(epoch, starttime)
+        stopidx = numpy.searchsorted(epoch, stoptime)
+        # Do all the cutting and flipping and stuff:
+        cenergy, cflux, cdflux = fit_prep(varname,
+                                          startidx,
+                                          stopidx,
+                                          energy,
+                                          flux,
+                                          dflux)
 
         # Don't cut down energies because we don't care about just displaying:
-        plt.errorbar(cenergy[first_nonnan:last_nonnan],
-                     cflux[first_nonnan:last_nonnan],
-                     yerr=cdflux[first_nonnan:last_nonnan],
-                     color='red')
+        plt.errorbar(cenergy,
+                     cflux,
+                     yerr=cdflux,
+                     color='red',
+                     label='spectrum (full time range)')
+
+        # Also plot the inner 50% time spectrum:
+        startidx = numpy.searchsorted(epoch, starttime + 0.25 * (stoptime - starttime))
+        stopidx = numpy.searchsorted(epoch, starttime + 0.75 * (stoptime - starttime))
+        # Do all the cutting and flipping and stuff:
+        cenergy, cflux, cdflux = fit_prep(varname,
+                                          startidx,
+                                          stopidx,
+                                          energy,
+                                          flux,
+                                          dflux)
+
+        # Don't cut down energies because we don't care about just displaying:
+        plt.errorbar(cenergy,
+                     cflux,
+                     yerr=cdflux,
+                     color='#ff00ff',
+                     label='spectrum (middle 50%)')
 
         plt.xlim((PLOTTING_XLIM_LOWER, PLOTTING_XLIM_UPPER))
         plt.ylim((PLOTTING_YLIM_LOWER, PLOTTING_YLIM_UPPER))
@@ -131,10 +308,11 @@ def main(events_file, varname):
         plt.legend(loc=1,
                    prop={'family':'monospace'})
 
-        plt.title('{} Event: {} to {}'\
+        plt.title('{} Event: {} to {}, (idx {:02d})'\
                   .format(varname,
                           event[0, 0].strftime('%F %H%M'),
                           event[1, 0].strftime('%F %H%M'),
+                          i
                           )
                   )
 
