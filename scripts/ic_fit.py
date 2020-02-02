@@ -55,8 +55,8 @@ def fit(varname, model, epoch, energy, flux, dflux, starttime, stoptime, idx=Non
     bunch of different options.
 
     Returns a list like:
-        [("<human_name_0>", cenergy_0, cflux_0, cdflux_0, (popt_0...), (pcov_0...)),
-         ("<human_name_1>", cenergy_1, cflux_1, cdflux_1, (popt_1...), (pcov_1...))
+        [("<human_name_0>", cenergy_0, cflux_0, cdflux_0, (popt_0...), (pcov_0...), start_time_ratio_0, stop_time_ratio_0),
+         ("<human_name_1>", cenergy_1, cflux_1, cdflux_1, (popt_1...), (pcov_1...), start_time_ratio_1, stop_time_ratio_1)
          ...]
     """
     how = {'ChanT': [
@@ -130,12 +130,6 @@ def fit(varname, model, epoch, energy, flux, dflux, starttime, stoptime, idx=Non
                                                       cflux[e_startidx:e_stopidx],
                                                       sigma=cdflux[e_startidx:e_stopidx],
                                                       absolute_sigma=True)
-                # I believe we DO in fact have absolute sigma, correct?  (See note
-                # about this.)
-
-                energy_range = numpy.logspace(numpy.log10(PLOTTING_XLIM_LOWER),
-                                              numpy.log10(PLOTTING_XLIM_UPPER),
-                                              1000)
 
             except:
                 print('='*80)
@@ -161,7 +155,10 @@ def fit(varname, model, epoch, energy, flux, dflux, starttime, stoptime, idx=Non
                          cflux[e_startidx:e_stopidx],
                          cdflux[e_startidx:e_stopidx],
                          popt,
-                         pcov))
+                         pcov,
+                         params['t_range'][0] if 't_range' in params else 0.,
+                         params['t_range'][1] if 't_range' in params else 1.,
+                         ))
 
     else:
         # Because we don't have to treat this var in any special manner,
@@ -176,6 +173,9 @@ def fit(varname, model, epoch, energy, flux, dflux, starttime, stoptime, idx=Non
                                           energy,
                                           flux,
                                           dflux)
+
+        # Get the energy trunc's (in real numbers, get idx's next):
+        fit_lower_bound, fit_upper_bound = energy_trunc(varname)
 
         # Cut down to the energies we're interested in studying:
         e_startidx = numpy.searchsorted(cenergy, fit_lower_bound)
@@ -197,19 +197,21 @@ def fit(varname, model, epoch, energy, flux, dflux, starttime, stoptime, idx=Non
         # Finally, we can append everything to the list that we found.
         t_range = (0., 1.)
         e_range = energy_trunc(varname)
-        human_name = 't_range: {}, e_range: {}'.format(t_range, e_range)
+        human_name = 't_range: {}; e_range: {}'.format(t_range, e_range)
         # We have everything else, so we can just add it to the list:
         fits.append((human_name,
                      cenergy[e_startidx:e_stopidx],
                      cflux[e_startidx:e_stopidx],
                      cdflux[e_startidx:e_stopidx],
                      popt,
-                     pcov))
+                     pcov,
+                     0.,
+                     1.))
 
     return fits
 
 
-def main(events_file, varname):
+def main(events_file, varname, together=False):
     # Open the arrays:
     with open('../data/ic_event_{}_flux.pickle{}'\
               .format(varname, sys.version_info[0]),
@@ -225,9 +227,6 @@ def main(events_file, varname):
     # Energy bins:
     energy = arrs['energy']
 
-    # # Also get the energy trunc's:
-    # fit_lower_bound, fit_upper_bound = energy_trunc(varname)
-
     # Open the saved event times:
     with open(events_file, 'rb') as fp:
         e = pickle.load(fp)
@@ -236,12 +235,15 @@ def main(events_file, varname):
 
     # Now, for each event (row) in e:
     for i, event in enumerate(e):
+
+        if together is True:
+            # Set this up now so we capture the plots (that are supposed to be
+            # together) together on the same canvas:
+            plt.figure(figsize=(10, 8))
+
         # Cut all vars in time that we're looking at:
         starttime = event[0, 0]
         stoptime = event[1, 0]
-
-        # Set this up now in case the optimization doesn't fail:
-        plt.figure(figsize=(10, 8))
 
         # Do the fit here:
         fits = fit(varname, model, epoch, energy, flux,
@@ -252,7 +254,13 @@ def main(events_file, varname):
                                       1000)
 
         for f in fits:
-            humanname, e, f, df, popt, pcov = f
+            if together is False:
+                # If we're plotting a new thing each time, we need to get it
+                # on a canvas of the right size.  Essentially this
+                # forces the creation of a new canvas of the right size and
+                # still captures the plots of everything.
+                plt.figure(figsize=(10, 8))
+            humanname, e, f, df, popt, pcov, tr_start, tr_stop = f
             fmtstr = 'fit: {}; params: [' + '{:4G}, ' * (len(popt) - 1) + '{:4G}' + ']'
             p = plt.plot(energy_range,
                          model(energy_range, *popt),
@@ -260,67 +268,94 @@ def main(events_file, varname):
             # Also plot the points used for the fit:
             plt.plot(e, f, "o", color=p[-1].get_color())
 
+            if together is False:
+                # Also plot the inner 50% time spectrum:
+                startidx = numpy.searchsorted(epoch, starttime + tr_start * (stoptime - starttime))
+                stopidx = numpy.searchsorted(epoch, starttime + tr_stop * (stoptime - starttime))
+                # Do all the cutting and flipping and stuff:
+                cenergy, cflux, cdflux = fit_prep(varname,
+                                                  startidx,
+                                                  stopidx,
+                                                  energy,
+                                                  flux,
+                                                  dflux)
+                # Don't cut down energies because we don't care about just displaying:
+                plt.errorbar(cenergy,
+                             cflux,
+                             yerr=cdflux,
+                             color='red',
+                             label='spectrum')
 
-        startidx = numpy.searchsorted(epoch, starttime)
-        stopidx = numpy.searchsorted(epoch, stoptime)
-        # Do all the cutting and flipping and stuff:
-        cenergy, cflux, cdflux = fit_prep(varname,
-                                          startidx,
-                                          stopidx,
-                                          energy,
-                                          flux,
-                                          dflux)
+                plt.xlim((PLOTTING_XLIM_LOWER, PLOTTING_XLIM_UPPER))
+                plt.ylim((PLOTTING_YLIM_LOWER, PLOTTING_YLIM_UPPER))
+                plt.xscale('log')
+                plt.xlabel('Energy (keV)')
+                plt.yscale('log')
+                plt.ylabel('j')
+                plt.legend(loc=1, prop={'family':'monospace'})
+                plt.title('{} Event: {} to {}, (idx {:02d})'\
+                          .format(varname,
+                                  event[0, 0].strftime('%F %H%M'),
+                                  event[1, 0].strftime('%F %H%M'),
+                                  i))
+                plt.tight_layout()
+                plt.savefig('../figures/spectrum_{}_{:02d}_{}.png'.format(varname, i, humanname\
+                                                                          .replace('_', '-')\
+                                                                          .replace(' ', '')\
+                                                                          .replace(';', '_')\
+                                                                          .replace(':', '')\
+                                                                          .replace(',', '-')),
+                            dpi=300)
+                plt.close()
 
-        # Don't cut down energies because we don't care about just displaying:
-        plt.errorbar(cenergy,
-                     cflux,
-                     yerr=cdflux,
-                     color='red',
-                     label='spectrum (full time range)')
 
-        # Also plot the inner 50% time spectrum:
-        startidx = numpy.searchsorted(epoch, starttime + 0.25 * (stoptime - starttime))
-        stopidx = numpy.searchsorted(epoch, starttime + 0.75 * (stoptime - starttime))
-        # Do all the cutting and flipping and stuff:
-        cenergy, cflux, cdflux = fit_prep(varname,
-                                          startidx,
-                                          stopidx,
-                                          energy,
-                                          flux,
-                                          dflux)
+        if together is True:
+            startidx = numpy.searchsorted(epoch, starttime)
+            stopidx = numpy.searchsorted(epoch, stoptime)
+            # Do all the cutting and flipping and stuff:
+            cenergy, cflux, cdflux = fit_prep(varname,
+                                              startidx,
+                                              stopidx,
+                                              energy,
+                                              flux,
+                                              dflux)
+            # Don't cut down energies because we don't care about just displaying:
+            plt.errorbar(cenergy,
+                         cflux,
+                         yerr=cdflux,
+                         label='spectrum (full time range)')
+            # Also plot the inner 50% time spectrum:
+            startidx = numpy.searchsorted(epoch, starttime + 0.25 * (stoptime - starttime))
+            stopidx = numpy.searchsorted(epoch, starttime + 0.75 * (stoptime - starttime))
+            # Do all the cutting and flipping and stuff:
+            cenergy, cflux, cdflux = fit_prep(varname,
+                                              startidx,
+                                              stopidx,
+                                              energy,
+                                              flux,
+                                              dflux)
+            # Don't cut down energies because we don't care about just displaying:
+            plt.errorbar(cenergy,
+                         cflux,
+                         yerr=cdflux,
+                         label='spectrum (middle)')
 
-        # Don't cut down energies because we don't care about just displaying:
-        plt.errorbar(cenergy,
-                     cflux,
-                     yerr=cdflux,
-                     color='#ff00ff',
-                     label='spectrum (middle 50%)')
-
-        plt.xlim((PLOTTING_XLIM_LOWER, PLOTTING_XLIM_UPPER))
-        plt.ylim((PLOTTING_YLIM_LOWER, PLOTTING_YLIM_UPPER))
-
-        plt.xscale('log')
-        plt.xlabel('Energy (keV)')
-
-        plt.yscale('log')
-        plt.ylabel('j')
-
-        plt.legend(loc=1,
-                   prop={'family':'monospace'})
-
-        plt.title('{} Event: {} to {}, (idx {:02d})'\
-                  .format(varname,
-                          event[0, 0].strftime('%F %H%M'),
-                          event[1, 0].strftime('%F %H%M'),
-                          i
-                          )
-                  )
-
-        plt.tight_layout()
-
-        plt.savefig('../figures/spectrum_{}_{:02d}.png'.format(varname, i),
-                    dpi=300)
-        plt.close()
+            plt.xlim((PLOTTING_XLIM_LOWER, PLOTTING_XLIM_UPPER))
+            plt.ylim((PLOTTING_YLIM_LOWER, PLOTTING_YLIM_UPPER))
+            plt.xscale('log')
+            plt.xlabel('Energy (keV)')
+            plt.yscale('log')
+            plt.ylabel('j')
+            plt.legend(loc=1, prop={'family':'monospace'})
+            plt.title('{} Event: {} to {}, (idx {:02d})'\
+                      .format(varname,
+                              event[0, 0].strftime('%F %H%M'),
+                              event[1, 0].strftime('%F %H%M'),
+                              i))
+            plt.tight_layout()
+            plt.savefig('../figures/spectrum_{}_{:02d}.png'.format(varname, i),
+                        dpi=300)
+            plt.close()
 
 
 if __name__ == "__main__":
@@ -332,15 +367,22 @@ if __name__ == "__main__":
                         ' \'ChanP\', \'ChanT\', \'ChanR\', or \'all\'',
                         dest='varname',
                         action='store')
+    parser.add_argument('-t',
+                        help='plot all spectra of a particular rate (ChanP,'
+                        ' ChanT, or ChanR, regardless of time/energy slicing)'
+                        ' on the same plot',
+                        dest='together',
+                        action='store_true',
+                        default=False)
     args = parser.parse_args()
     # Make sure we have something we can look at. If this assertion fails,
     # it's because we received an invalid varname.
     assert args.varname in ('ChanP', 'ChanT', 'ChanR', 'all')
     if args.varname != 'all':
-        main(args.events_file, args.varname)
+        main(args.events_file, args.varname, args.together)
     else:
         for varname in ('ChanP', 'ChanT', 'ChanR'):
             print('='*80)
             print('{:^80}'.format('Starting {}...'.format(varname)))
             print('='*80)
-            main(args.events_file, varname)
+            main(args.events_file, varname, args.together)
