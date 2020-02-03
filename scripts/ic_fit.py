@@ -4,16 +4,19 @@ Perform a fit on the data according to some model, as provided.
 """
 
 import argparse
+import json
 import matplotlib.pyplot as plt
 import numpy
+import os
 import pickle
 import scipy
 import scipy.optimize
 import sys
 
 # This import is a bit ugly, but it's less ugly than retyping this every time:
-from common import uncert_prop, nan_cut, energy_trunc, PLOTTING_XLIM_LOWER, \
-    PLOTTING_XLIM_UPPER, PLOTTING_YLIM_LOWER, PLOTTING_YLIM_UPPER
+from common import uncert_prop, nan_cut, energy_trunc, get_eta_squared, \
+    PLOTTING_XLIM_LOWER, PLOTTING_XLIM_UPPER, PLOTTING_YLIM_LOWER, \
+    PLOTTING_YLIM_UPPER
 from ic_models import fisk_2008_eq38_modified as model
 
 # This is pretty case-specific right now, but I can blow it up to be more
@@ -24,6 +27,9 @@ from ic_models import fisk_2008_eq38_modified as model
 # axis again anyways.
 
 
+
+param_table = {}
+""" Table of parameters to save. """
 
 def fit_prep(varname, startidx, stopidx, energy, flux, dflux):
     """ Function to unify how we're slicing energy, flux, and dflux,
@@ -88,6 +94,7 @@ def fit(varname, model, epoch, energy, flux, dflux, starttime, stoptime, idx=Non
 
     These parameters override parameters in common. """
 
+    human_name_base = 't_range: {}; e_range: {}'
     fits = []
 
     if varname in how:
@@ -148,7 +155,7 @@ def fit(varname, model, epoch, energy, flux, dflux, starttime, stoptime, idx=Non
                 e_range = params['e_range']
             else:
                 e_range = energy_trunc(varname)
-            human_name = 't_range: {}, e_range: {}'.format(t_range, e_range)
+            human_name = human_name_base.format(t_range, e_range)
             # We have everything else, so we can just add it to the list:
             fits.append((human_name,
                          cenergy[e_startidx:e_stopidx],
@@ -197,7 +204,7 @@ def fit(varname, model, epoch, energy, flux, dflux, starttime, stoptime, idx=Non
         # Finally, we can append everything to the list that we found.
         t_range = (0., 1.)
         e_range = energy_trunc(varname)
-        human_name = 't_range: {}; e_range: {}'.format(t_range, e_range)
+        human_name = human_name_base.format(t_range, e_range)
         # We have everything else, so we can just add it to the list:
         fits.append((human_name,
                      cenergy[e_startidx:e_stopidx],
@@ -211,7 +218,10 @@ def fit(varname, model, epoch, energy, flux, dflux, starttime, stoptime, idx=Non
     return fits
 
 
-def main(events_file, varname, together=False):
+def main(events_file, mag_file, varname, together=False):
+    # First get the param dictionary:
+    global param_table
+
     # Open the arrays:
     with open('../data/ic_event_{}_flux.pickle{}'\
               .format(varname, sys.version_info[0]),
@@ -233,9 +243,13 @@ def main(events_file, varname, together=False):
         # Note that e is like: [((t0_start, y0_start), (t0_stop, y0_stop)),
         #                       ((t1_start, y1_start), (t1_stop, y1_stop)), ...]
 
+    with open(mag_file, 'rb') as fp:
+        mag = pickle.load(fp)
+    mag_str = mag['mag']
+    mag_epoch = mag['epoch']
+
     # Now, for each event (row) in e:
     for i, event in enumerate(e):
-
         if together is True:
             # Set this up now so we capture the plots (that are supposed to be
             # together) together on the same canvas:
@@ -267,6 +281,23 @@ def main(events_file, varname, together=False):
                          label=fmtstr.format(humanname, *popt))
             # Also plot the points used for the fit:
             plt.plot(e, f, "o", color=p[-1].get_color())
+
+            # Do the math for the B field if it's not there yet:
+            param_table_keyname = "{}_to_{}".format(starttime.strftime('%F-%H-%M'),
+                                                    stoptime.strftime('%F-%H-%M'))
+            if param_table_keyname not in param_table:
+                # We need to add this information to it:
+                eta_squared = get_eta_squared(mag_str[numpy.searchsorted(mag_epoch,
+                                                                         starttime)\
+                                                      :numpy.searchsorted(mag_epoch,
+                                                                          stoptime)])
+                # Create the dict:
+                param_table[param_table_keyname] = {}
+                # Add eta-squared to it.
+                param_table[param_table_keyname]['eta-squared'] = eta_squared
+
+            # Now add the params to the table:
+            param_table[param_table_keyname][varname + ': ' + humanname] = popt[-1]
 
             if together is False:
                 # Also plot the inner 50% time spectrum:
@@ -357,11 +388,18 @@ def main(events_file, varname, together=False):
                         dpi=300)
             plt.close()
 
-
 if __name__ == "__main__":
+    # Open the old param table if it exists.
+    if os.path.exists('../data/param_table.json'):
+        with open('../data/param_table.json', 'r') as fp:
+            param_table = json.read(param_table, fp)
+
     parser = argparse.ArgumentParser()
     parser.add_argument(help='events definition file (from clickthrough)',
                         dest='events_file',
+                        action='store')
+    parser.add_argument(help='mag file from field concat script',
+                        dest='mag_file',
                         action='store')
     parser.add_argument(help='name of the variable to fit, can be'
                         ' \'ChanP\', \'ChanT\', \'ChanR\', or \'all\'',
@@ -379,10 +417,14 @@ if __name__ == "__main__":
     # it's because we received an invalid varname.
     assert args.varname in ('ChanP', 'ChanT', 'ChanR', 'all')
     if args.varname != 'all':
-        main(args.events_file, args.varname, args.together)
+        main(args.events_file, args.mag_file, args.varname, args.together)
     else:
         for varname in ('ChanP', 'ChanT', 'ChanR'):
             print('='*80)
             print('{:^80}'.format('Starting {}...'.format(varname)))
             print('='*80)
-            main(args.events_file, varname, args.together)
+            main(args.events_file, args.mag_file, varname, args.together)
+
+    # Lastly, if called as a script, we have to save the param table:
+    with open('../data/param_table.json', 'w') as fp:
+        json.dump(param_table, fp, sort_keys=True, indent=4)

@@ -15,6 +15,15 @@ PLOTTING_YLIM_LOWER = 1e-3
 PLOTTING_YLIM_UPPER = 10
 
 
+def get_eta_squared(inarr):
+    """ Function to perform array mean(s) for mag data.
+    Calculate eta-squared. """
+    # Using nanmean to be safe here, but probably strictly NOT
+    # be necessary if the file is in-spec.
+    B0 = numpy.nanmean(numpy.sqrt(numpy.sum(inarr**2, axis=1)))
+    B = numpy.sqrt(numpy.sum(inarr**2, axis=1))
+    return numpy.nanmean((B - B0)**2 / B0**2)
+
 def uncert_prop(inarr, axis):
     """ Propagate the uncertainty of numbers on some axis when averaging down
     along that axis. """
