@@ -16,15 +16,8 @@ import sys
 # This import is a bit ugly, but it's less ugly than retyping this every time:
 from common import uncert_prop, nan_cut, energy_trunc, get_eta_squared, \
     PLOTTING_XLIM_LOWER, PLOTTING_XLIM_UPPER, PLOTTING_YLIM_LOWER, \
-    PLOTTING_YLIM_UPPER, FITTING_HOW
+    PLOTTING_YLIM_UPPER, FITTING_HOW, REDS_RAW, GREENS_RAW, BLUES_RAW
 from ic_models import fisk_2008_eq38_modified as model
-
-# This is pretty case-specific right now, but I can blow it up to be more
-# general later.
-
-# For right now I'm going to use the hourly-averaged rates, because the time
-# base doesn't make a difference because I'll be averaging down along the time
-# axis again anyways.
 
 
 
@@ -61,8 +54,8 @@ def fit(varname, model, epoch, energy, flux, dflux, starttime, stoptime, idx=Non
     bunch of different options.
 
     Returns a list like:
-        [("<humanname_0>", cenergy_0, cflux_0, cdflux_0, (popt_0...), (pcov_0...), start_time_ratio_0, stop_time_ratio_0),
-         ("<humanname_1>", cenergy_1, cflux_1, cdflux_1, (popt_1...), (pcov_1...), start_time_ratio_1, stop_time_ratio_1)
+        [("<humanname_0>", cenergy_0, cflux_0, cdflux_0, (popt_0...), (pcov_0...)),
+         ("<humanname_1>", cenergy_1, cflux_1, cdflux_1, (popt_1...), (pcov_1...)),
          ...]
     """
     # Just change the name here because replacing it is more work:
@@ -134,30 +127,13 @@ def fit(varname, model, epoch, energy, flux, dflux, starttime, stoptime, idx=Non
                      cdflux[e_startidx:e_stopidx],
                      popt,
                      pcov,
-                     params['t_range'][0] if 't_range' in params else 0.,
-                     params['t_range'][1] if 't_range' in params else 1.,
                      ))
 
     return fits
 
-def main(events_file, mag_file, varname):
+def main(events_file, mag_file, varnames):
     # First get the param dictionary:
     global param_table
-
-    # Open the arrays:
-    with open('../data/ic_event_{}_flux.pickle{}'\
-              .format(varname, sys.version_info[0]),
-              'rb') as fp:
-        arrs = pickle.load(fp)
-
-    # Flux:
-    flux = arrs['flux']
-    # Flux delta:
-    dflux = arrs['dflux']
-    # Datetime/epoch:
-    epoch = arrs['epoch']
-    # Energy bins:
-    energy = arrs['energy']
 
     # Open the saved event times:
     with open(events_file, 'rb') as fp:
@@ -176,93 +152,112 @@ def main(events_file, mag_file, varname):
         starttime = event[0, 0]
         stoptime = event[1, 0]
 
-        # Do the fit here:
-        fits = fit(varname, model, epoch, energy, flux,
-                   dflux, starttime, stoptime, i)
+        # Do the math for the B field if it's not there yet.  First make
+        # key for the event:
+        param_table_keyname = "{}_to_{}".format(starttime.strftime('%F-%H-%M'),
+                                                stoptime.strftime('%F-%H-%M'))
+        # Then check if the key's in the dict:
+        if param_table_keyname not in param_table:
+            # We need to add this information to it:
+            eta_squared = get_eta_squared(mag_str[numpy.searchsorted(mag_epoch,
+                                                                     starttime)\
+                                                  :numpy.searchsorted(mag_epoch,
+                                                                      stoptime)])
+            # Create the dict:
+            param_table[param_table_keyname] = {}
+            # Add eta-squared to it.
+            param_table[param_table_keyname]['eta-squared'] = eta_squared
 
+        # Set figsize:
+        plt.figure(figsize=(10, 8))
+
+        # Make the energy range for the spectrum/fit plotting so we don't have
+        # to remake it every time:
         energy_range = numpy.logspace(numpy.log10(PLOTTING_XLIM_LOWER),
                                       numpy.log10(PLOTTING_XLIM_UPPER),
                                       1000)
 
-        for f in fits:
-            # Set figsize:
-            plt.figure(figsize=(10, 8))
-            # Break out fit information from obj that's returned:
-            humanname, e, f, df, popt, pcov, tr_start, tr_stop = f
+        for j, varname in enumerate(varnames):
+            # Set the colorset we want to use for this:
+            colors = (REDS_RAW, BLUES_RAW, GREENS_RAW)[j % 3]
 
-            # Make labelstring and actually display the fit:
-            fmtstr = 'fit: {}; params: [' + '{:4G}, ' * (len(popt) - 1) + '{:4G}' + ']'
-            p = plt.plot(energy_range,
-                         model(energy_range, *popt),
-                         label=fmtstr.format(humanname, *popt))
+            # Only plot this spectrum if we have at least one fit:
+            plot_this_spectrum = False
+            # Open the arrays:
+            with open('../data/ic_event_{}_flux.pickle{}'\
+                      .format(varname, sys.version_info[0]),
+                      'rb') as fp:
+                arrs = pickle.load(fp)
+            flux = arrs['flux']
+            dflux = arrs['dflux']
+            epoch = arrs['epoch']
+            energy = arrs['energy']
 
-            # Also plot the points used for the fit:
-            plt.plot(e, f, "o", color=p[-1].get_color())
+            # Do the fit here:
+            fits = fit(varname, model, epoch, energy, flux,
+                       dflux, starttime, stoptime, i)
 
-            # Do the math for the B field if it's not there yet.  First make
-            # key for the event:
-            param_table_keyname = "{}_to_{}".format(starttime.strftime('%F-%H-%M'),
-                                                    stoptime.strftime('%F-%H-%M'))
-            # Then check if the key's in the dict:
-            if param_table_keyname not in param_table:
-                # We need to add this information to it:
-                eta_squared = get_eta_squared(mag_str[numpy.searchsorted(mag_epoch,
-                                                                         starttime)\
-                                                      :numpy.searchsorted(mag_epoch,
-                                                                          stoptime)])
-                # Create the dict:
-                param_table[param_table_keyname] = {}
-                # Add eta-squared to it.
-                param_table[param_table_keyname]['eta-squared'] = eta_squared
+            for k, f in enumerate(fits):
+                # We must have at least one fit, so okay:
+                plot_this_spectrum = True
 
-            # Now add the params to the table:
-            param_table[param_table_keyname][varname + ': ' + humanname] = popt[-1]
+                humanname, e, f, df, popt, pcov = f
 
-            # Also plot the inner 50% time spectrum:
-            startidx = numpy.searchsorted(epoch, starttime + tr_start * (stoptime - starttime))
-            stopidx = numpy.searchsorted(epoch, starttime + tr_stop * (stoptime - starttime))
-            # Do all the cutting and flipping and stuff:
-            cenergy, cflux, cdflux = fit_prep(varname,
-                                              startidx,
-                                              stopidx,
-                                              energy,
-                                              flux,
-                                              dflux)
-            # Don't cut down energies because we don't care about just displaying:
-            plt.errorbar(cenergy,
-                         cflux,
-                         yerr=cdflux,
-                         color='red',
-                         label='spectrum')
+                # Make labelstring and actually display the fit:
+                fmtstr = '{} fit: {}; params: [' \
+                    + '{:4G}, ' * (len(popt) - 1) \
+                    + '{:4G}' + ']'
+                p = plt.plot(energy_range,
+                             model(energy_range, *popt),
+                             label=fmtstr.format(varname, humanname, *popt),
+                             color=colors[k])
 
-            plt.xlim((PLOTTING_XLIM_LOWER, PLOTTING_XLIM_UPPER))
-            plt.ylim((PLOTTING_YLIM_LOWER, PLOTTING_YLIM_UPPER))
-            plt.xscale('log')
-            plt.xlabel('Energy (keV)')
-            plt.yscale('log')
-            plt.ylabel('j')
-            plt.legend(loc=1, prop={'family':'monospace'})
-            plt.title('{} Event: {} to {}, ID:{:02d}'\
-                      .format(varname,
-                              event[0, 0].strftime('%F %H%M'),
-                              event[1, 0].strftime('%F %H%M'),
-                              i))
-            plt.tight_layout()
-            # This is HORRIBLE:
-            # plt.savefig('../figures/spectrum_{}_{:02d}_{}.png'.format(varname, i, humanname\
-            #                                                           .replace('_', '-')\
-            #                                                           .replace(' ', '')\
-            #                                                           .replace(';', '_')\
-            #                                                           .replace(':', '')\
-            #                                                           .replace(',', '-')),
-            #             dpi=300)
-            plt.close()
+                # Also plot the points used for the fit:
+                plt.plot(e, f, "o", color=p[-1].get_color())
+
+                # Now add the params to the table:
+                param_table[param_table_keyname][varname + ': ' + humanname] = popt[-1]
+
+
+            if plot_this_spectrum is True:
+                # Also plot the spectrum:
+                startidx = numpy.searchsorted(epoch, starttime)
+                stopidx = numpy.searchsorted(epoch, stoptime)
+                # Do all the cutting and flipping and stuff:
+                cenergy, cflux, cdflux = fit_prep(varname,
+                                                  startidx,
+                                                  stopidx,
+                                                  energy,
+                                                  flux,
+                                                  dflux)
+                # Don't cut down energies because we don't care about just displaying:
+                plt.errorbar(cenergy,
+                             cflux,
+                             yerr=cdflux,
+                             label='{} spectrum'.format(varname),
+                             color=colors[-1])
+
+        plt.xlim((PLOTTING_XLIM_LOWER, PLOTTING_XLIM_UPPER))
+        plt.ylim((PLOTTING_YLIM_LOWER, PLOTTING_YLIM_UPPER))
+        plt.xscale('log')
+        plt.xlabel('Energy (keV)')
+        plt.yscale('log')
+        plt.ylabel('j')
+        plt.legend(loc=1, prop={'family':'monospace'})
+        plt.title('Event ID {:02d}: {} to {}'\
+                  .format(i,
+                          event[0, 0].strftime('%F %H%M'),
+                          event[1, 0].strftime('%F %H%M')))
+        plt.tight_layout()
+        plt.savefig('../figures/spectrum_{:02d}.png'.format(i))
+        # plt.show()
+        plt.close()
 
 if __name__ == "__main__":
     # Open the old param table if it exists.
     if os.path.exists('../data/param_table.json'):
         with open('../data/param_table.json', 'r') as fp:
-            param_table = json.read(param_table, fp)
+            param_table = json.load(fp)
 
     parser = argparse.ArgumentParser()
     parser.add_argument(help='events definition file (from clickthrough)',
@@ -272,21 +267,19 @@ if __name__ == "__main__":
                         dest='mag_file',
                         action='store')
     parser.add_argument(help='name of the variable to fit, can be'
-                        ' \'ChanP\', \'ChanT\', \'ChanR\', or \'all\'',
-                        dest='varname',
-                        action='store')
+                        ' \'ChanP\', \'ChanT\', \'ChanR\', \'all\', or some '
+                        'combination of these, (not including \'all\')',
+                        dest='varnames',
+                        action='store',
+                        nargs='+')
     args = parser.parse_args()
-    # Make sure we have something we can look at. If this assertion fails,
-    # it's because we received an invalid varname.
-    assert args.varname in ('ChanP', 'ChanT', 'ChanR', 'all')
-    if args.varname != 'all':
-        main(args.events_file, args.mag_file, args.varname)
+    for n in args.varnames:
+        # If this failed, there's a typo in your command line args:
+        assert n in ('ChanP', 'ChanT', 'ChanR', 'all')
+    if args.varnames[0] != 'all':
+        main(args.events_file, args.mag_file, args.varnames)
     else:
-        for varname in ('ChanP', 'ChanT', 'ChanR'):
-            print('='*80)
-            print('{:^80}'.format('Starting {}...'.format(varname)))
-            print('='*80)
-            main(args.events_file, args.mag_file, varname)
+        main(args.events_file, args.mag_file, ('ChanP', 'ChanT', 'ChanR'))
 
     # Lastly, if called as a script, we have to save the param table:
     with open('../data/param_table.json', 'w') as fp:

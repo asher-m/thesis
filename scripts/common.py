@@ -7,6 +7,8 @@ Created on Tue Jan 14 01:21:56 2020
 
 import numpy
 
+from cycler import cycler
+
 
 
 PLOTTING_XLIM_LOWER = 30
@@ -18,12 +20,16 @@ FITTING_HOW = {'ChanT': [
                             {  # Blank dict so we still make the normal plot.
                                 },
                             {  # Fit of full time range, trunc'ed e range:
-                                'e_range':(95, 205),
+                                'e_range':(95, 160),
                                 },
                             ],
                'ChanP': [
                    {  # Blank dict so we still make the normal plot.
                        },
+                   ],
+               'ChanR': [
+                   # {  # Leave this dict commented out for absolutely no plots.
+                   #     }
                    ]
                }
 """ Dictionary of how to plot each varname.  All plots for a particular
@@ -34,6 +40,39 @@ varname are produced.  Valid keys are:
 
 These parameters override parameters in energy_trunc and are used in the fit
 script. """
+
+REDS_RAW = ['#B22222',
+            '#FF0000',
+            '#8B0000',
+            '#800000',
+            '#FF6347',
+            '#FF4500']
+REDS = (cycler(color=REDS_RAW) * cycler(linestyle=['-']))
+""" Reds for use in plotting a particular species or type. """
+
+GREENS_RAW = [
+    '#7FFF00',
+    '#32CD32',
+    '#00FF00',
+    '#228B22',
+    '#008000',
+    '#006400']
+GREENS = (cycler(color=GREENS_RAW) * cycler(linestyle=['-']))
+""" Greens for use in plotting a particular species or type. """
+
+BLUES_RAW = [
+    '#4169E1',
+    '#0000FF',
+    '#0000CD',
+    '#00008B',
+    '#000080',
+    '#191970',
+    '#8A2BE2',
+    '#4B0082',
+    '#00BFFF',
+    '#1E90FF']
+BLUES = (cycler(color=BLUES_RAW) * cycler(linestyle=['-']))
+""" Blues for use in plotting a particular species or type. """
 
 
 def get_eta_squared(inarr):
@@ -102,9 +141,9 @@ def energy_trunc(varname):
     the fit function in there. """
     # Fitting parameters:
     if varname == 'ChanT':
-        return 37, 205
+        return 37, 160
     elif varname == 'ChanR':
-        return 95, 205
+        return 95, 160
     elif varname == 'ChanP':
         # From talking to Jon, looks like P should be ~95 to 200.
-        return 95, 205
+        return 95, 160
