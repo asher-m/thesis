@@ -14,6 +14,27 @@ PLOTTING_XLIM_UPPER = 500
 PLOTTING_YLIM_LOWER = 1e-3
 PLOTTING_YLIM_UPPER = 10
 
+FITTING_HOW = {'ChanT': [
+                            {  # Blank dict so we still make the normal plot.
+                                },
+                            {  # Fit of full time range, trunc'ed e range:
+                                'e_range':(95, 205),
+                                },
+                            ],
+               'ChanP': [
+                   {  # Blank dict so we still make the normal plot.
+                       },
+                   ]
+               }
+""" Dictionary of how to plot each varname.  All plots for a particular
+varname are produced.  Valid keys are:
+    'e_range'
+    't_range'
+    --- Nothing else has been implemented.
+
+These parameters override parameters in energy_trunc and are used in the fit
+script. """
+
 
 def get_eta_squared(inarr):
     """ Function to perform array mean(s) for mag data.
