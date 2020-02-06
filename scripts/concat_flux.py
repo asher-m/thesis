@@ -120,7 +120,7 @@ def main(varname):
                         j += 1
 
     # This will only work with the same version of python as when used with this script:
-    with open('../data/ic_event_{}_flux.pickle{}'.format(varname,
+    with open('../data/flux_event_{}.pickle{}'.format(varname,
                                                          sys.version_info[0]),
               'wb') as fp:
         pickle.dump({'flux':flux_mean[:j],

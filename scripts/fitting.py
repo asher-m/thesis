@@ -17,7 +17,7 @@ import sys
 from common import uncert_prop, nan_cut, energy_trunc, get_eta_squared, \
     PLOTTING_XLIM_LOWER, PLOTTING_XLIM_UPPER, PLOTTING_YLIM_LOWER, \
     PLOTTING_YLIM_UPPER, FITTING_HOW, REDS_RAW, GREENS_RAW, BLUES_RAW
-from ic_models import fisk_2008_eq38_modified as model
+from models import fisk_2008_eq38_modified as model
 
 
 
@@ -184,7 +184,7 @@ def main(events_file, mag_file, varnames):
             # Only plot this spectrum if we have at least one fit:
             plot_this_spectrum = False
             # Open the arrays:
-            with open('../data/ic_event_{}_flux.pickle{}'\
+            with open('../data/flux_event_{}.pickle{}'\
                       .format(varname, sys.version_info[0]),
                       'rb') as fp:
                 arrs = pickle.load(fp)

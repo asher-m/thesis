@@ -38,11 +38,15 @@ def main(click=False, review=None):
 
     plotting_at = 0
     # First things first we need to open the arrays and make the pcolormeshes.
-    for f in glob.glob('../data/ic_event*'):
-        m = re.match(r'^.*_(Chan[RPT]{{1}})_flux.pickle{}$'\
+    for f in glob.glob('../data/flux_event*'):
+        m = re.match(r'^flux_event_(Chan[RPT]{{1}}).pickle{}$'\
                      .format(sys.version_info[0]),
                      os.path.basename(f))
-        varname = m.group(1)
+        if m is not None:
+            varname = m.group(1)
+        else:
+            # Due to similar file names, this may sometimes be necessary:
+            continue
         # Open the arrays:
         with open(f, 'rb') as fp:
             arrs = pickle.load(fp)
