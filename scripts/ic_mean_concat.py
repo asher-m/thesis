@@ -49,6 +49,9 @@ def main(varname):
     epoch_mean = numpy.empty(maxn, dtype=datetime.datetime)
     energy_agg = numpy.empty(shape=(maxn, lenn), dtype=numpy.float)
 
+    # Get ready to cut out elevation 5:
+    elevation = numpy.choose(numpy.arange(80) % 10, (0, 1, 1, 0, 2, 2, 3, 3, 4, 5))
+
     # This is so nanmean doesn't give us "RuntimeWarning: Mean of empty slice"
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=RuntimeWarning)
@@ -67,6 +70,9 @@ def main(varname):
                 dflux[dflux < 0] = numpy.nan
                 energy = f['H_{}_Energy'.format(varname)][...]
                 energy[energy < 0] = numpy.nan
+
+                # Cut out elevation 5:
+                flux[:, elevation == 5] = numpy.nan
 
                 # Get the epoch:
                 epoch = f['Epoch_{}'.format(varname)][...]
