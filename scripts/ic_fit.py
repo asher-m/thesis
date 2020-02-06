@@ -121,7 +121,7 @@ def fit(varname, model, epoch, energy, flux, dflux, starttime, stoptime, idx=Non
                                               dflux)
 
             if 'e_range' in params:
-                fit_lower_bound, fut_upper_bound = params['e_range']
+                fit_lower_bound, fit_upper_bound = params['e_range']
             else:
                 # Get the energy trunc's (in real numbers, get idx's next):
                 fit_lower_bound, fit_upper_bound = energy_trunc(varname)
