@@ -42,11 +42,12 @@ These parameters override parameters in energy_trunc and are used in the fit
 script. """
 
 REDS_RAW = ['#B22222',
-            '#FF0000',
+            '#FF0000',  # Kinda hard to see.
             '#8B0000',
             '#800000',
             '#FF6347',
-            '#FF4500']
+            # '#FF4500'  # Also kinda hard to see.
+            ]
 REDS = (cycler(color=REDS_RAW) * cycler(linestyle=['-']))
 """ Reds for use in plotting a particular species or type. """
 
