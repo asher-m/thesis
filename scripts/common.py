@@ -48,7 +48,7 @@ REDS_RAW = ['#B22222',
             '#FF6347',
             # '#FF4500'  # Also kinda hard to see.
             ]
-REDS = (cycler(color=REDS_RAW) * cycler(linestyle=['-']))
+REDS = (cycler('color', REDS_RAW) * cycler('linestyle', ['-']))
 """ Reds for use in plotting a particular species or type. """
 
 GREENS_RAW = [
@@ -58,7 +58,7 @@ GREENS_RAW = [
     '#228B22',
     '#008000',
     '#006400']
-GREENS = (cycler(color=GREENS_RAW) * cycler(linestyle=['-']))
+GREENS = (cycler('color', GREENS_RAW) * cycler('linestyle', ['-']))
 """ Greens for use in plotting a particular species or type. """
 
 BLUES_RAW = [
@@ -72,7 +72,7 @@ BLUES_RAW = [
     '#4B0082',
     '#00BFFF',
     '#1E90FF']
-BLUES = (cycler(color=BLUES_RAW) * cycler(linestyle=['-']))
+BLUES = (cycler('color', BLUES_RAW) * cycler('linestyle', ['-']))
 """ Blues for use in plotting a particular species or type. """
 
 
