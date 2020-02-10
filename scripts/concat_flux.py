@@ -72,7 +72,7 @@ def main(varname):
                 energy[energy < 0] = numpy.nan
 
                 # Cut out elevation 5:
-                flux[:, elevation == 5] = numpy.nan
+                flux[:, elevation == 5, :] = numpy.nan
 
                 # Get the epoch:
                 epoch = f['Epoch_{}'.format(varname)][...]
