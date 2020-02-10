@@ -4,7 +4,8 @@ Created on Tue Jan 14 01:21:56 2020
 
 @author: asher
 """
-
+import collections
+import collections.abc
 import numpy
 
 from cycler import cycler
@@ -148,3 +149,61 @@ def energy_trunc(varname):
     elif varname == 'ChanP':
         # From talking to Jon, looks like P should be ~95 to 200.
         return 95, 160
+
+def cut_like(inarr, like, *arrs, cutside='left', side='left', idx=False):
+    """ A function to cut a bunch of arrays like we'd cut some array when
+    searching for the lowest/highest allowable index.
+
+    "Left" cutting means you're retaining the "right" side of the array.
+    "Right" cutting means you're retaining the "left" side of the array.
+    "Both" cutting means you're cutting off the "left" and "right" side of
+    the array and you're interested in the middle.  This also requires
+    "like" to be a 2 element iterable.
+
+    If "idx" is keyword'ed to "True", "like" is assumed to be the index (or
+    indices) where to cut.
+
+    Specifically, like when we're cutting things in the time domain and we
+    need to cut like 10 arrays all the same way with the same indices. """
+    assert cutside in ('left', 'right', 'both')
+    assert isinstance(idx, bool)
+    ret = []
+    if cutside == 'both':
+        assert isinstance(like, collections.abc.Iterable) and len(like) == 2
+        if idx is False:
+            cutlow = numpy.searchsorted(inarr, like[0], side=side)
+            cuthigh = numpy.searchsorted(inarr, like[1], side=side)
+        else:
+            cutlow, cuthigh = like
+        ret.append(inarr[cutlow:cuthigh])
+        for a in arrs:
+            ret.append(a[cutlow:cuthigh])
+    else:
+        if idx is False:
+            cutidx = numpy.searchsorted(inarr, like, side=side)
+        else:
+            cutidx = like
+        if cutside == 'left':
+            ret.append(inarr[cutidx:])
+            for a in arrs:
+                ret.append(a[cutidx:])
+        else:
+            ret.append(inarr[:cutidx])
+            for a in arrs:
+                ret.append(a[:cutidx])
+    return tuple(ret)
+
+def get_nearest(to_value, from_set):
+    """ Function that takes a value, and gets the index nearest to
+    that value from_set.
+
+    I wish I could figure out how to write this to be faster because it's
+    interesting, but it's not really worth my time... """
+    if isinstance(to_value, numpy.ndarray):
+        idx_min = []
+        for v in to_value:
+            idx_min.append(numpy.argmin(numpy.abs(from_set - v)))
+        idx_min = numpy.array(idx_min)
+    else:
+        idx_min = numpy.argmin(numpy.abs(from_set - to_value))
+    return idx_min
