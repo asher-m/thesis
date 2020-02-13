@@ -72,6 +72,8 @@ def plot_etasq_scatter():
                 edgecolors='face')
     plt.xlabel('R (AU)')
     plt.ylabel('$\eta^2$')
+    plt.yscale('log')
+    plt.ylim((1e-4, 1e1))
     plt.tight_layout()
     # plt.show()
     plt.savefig('../figures/etasq_vs_R.png', dpi=300)
@@ -139,9 +141,11 @@ def plot_event_vs_etasq_scatter():
     plt.scatter(p[:, 0],
                 p[:, 1],
                 c=p[:, 2],
-                s=(1e4*p[:, 3])**(3/2))
+                s=5*(1e4*p[:, 3])**(1/2))
     plt.xlabel('R (AU)')
     plt.ylabel('$\eta^2$')
+    plt.yscale('log')
+    plt.ylim((1e-4, 1e1))
     plt.colorbar()
     plt.tight_layout()
     # plt.show()
