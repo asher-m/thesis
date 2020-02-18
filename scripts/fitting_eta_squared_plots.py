@@ -22,6 +22,7 @@ RE_CHAN = re.compile('.*Chan{}.*'.format(CHAN))
 STARTDATE = datetime.datetime(2018, 9, 18, 1, 0, 0)
 """ This is the first time we have good R values, (everything before is
 sporadic and makes this script not work/display nicely). """
+YLIM = (2e-3, 2e0)
 
 # Open files:
 with open('../data/magfield_eta_squared_daily_avg.pickle{}'\
@@ -73,7 +74,7 @@ def plot_etasq_scatter():
     plt.xlabel('R (AU)')
     plt.ylabel('$\eta^2$')
     plt.yscale('log')
-    plt.ylim((1e-4, 1e1))
+    plt.ylim(YLIM)
     plt.tight_layout()
     # plt.show()
     plt.savefig('../figures/etasq_vs_R.png', dpi=300)
@@ -141,12 +142,13 @@ def plot_event_vs_etasq_scatter():
     plt.scatter(p[:, 0],
                 p[:, 1],
                 c=p[:, 2],
-                s=5*(1e4*p[:, 3])**(1/2))
+                s=10*(1e4*p[:, 3])**(1/2))
     plt.xlabel('R (AU)')
     plt.ylabel('$\eta^2$')
     plt.yscale('log')
-    plt.ylim((1e-4, 1e1))
-    plt.colorbar()
+    plt.ylim(YLIM)
+    clb = plt.colorbar()
+    clb.set_label('Power Law Exponent')
     plt.tight_layout()
     # plt.show()
     plt.savefig('../figures/etasq_vs_R_events.png', dpi=300)
