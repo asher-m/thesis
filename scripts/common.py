@@ -83,21 +83,8 @@ def get_eta_squared(B_vec):
     breakpoint()
     B0_vec = numpy.nanmean(B_vec, axis=0)
     B0_hat = B0_vec / numpy.linalg.norm(B0_vec)
-    # # Take dot product of B_vec - B0_vec with B0_hat to get extent in
-    # # "parallel" direction, defined by B0_hat.  (Sum over these components
-    # # because that's how a dot product is defined.)
-    # B_par = numpy.sum((B_vec - B0_vec) * B0_hat, axis=1)
-    # # The above doesn't seem to work, so instead I'm doing:
-    # B_par = numpy.outer(numpy.linalg.norm(B_vec - B0_vec, axis=1),
-    #                     numpy.reshape(B0_hat, (-1, 3)))
-    # None of the above seems to yield reasonable answers,
-    # and after thinking about it, I think we actually want:
-    B_par = numpy.outer(numpy.linalg.norm(B_vec, axis=1),
-                        numpy.reshape(B0_hat, (-1, 3)))
-    # Essentially, for all of these cases, the check I was doing is/was:
-    assert numpy.all(numpy.linalg.norm(B_par, axis=1) \
-                     <= numpy.linalg.norm(B_vec, axis=1) \
-                        + 1e-6 * numpy.linalg.norm(B_vec, axis=1))
+    dB_par = numpy.sum((B_vec - B0_vec) * B0_hat, axis=1)
+    return numpy.nanmean(dB_par**2 / numpy.linalg.norm(B0_vec)**2)
 
 def uncert_prop(inarr, axis):
     """ Propagate the uncertainty of numbers on some axis when averaging down
