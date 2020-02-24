@@ -12,7 +12,12 @@ import scipy.optimize
 
 from cycler import cycler
 
+from models import fisk_2008_eq38_modified as model
 
+
+
+# Just to make this explicit:
+MODEL = model
 
 PLOTTING_XLIM_LOWER = 30
 PLOTTING_XLIM_UPPER = 500
@@ -245,7 +250,7 @@ def fit(varname, model, epoch, energy, flux, dflux, starttime, stoptime,
     # Just change the name here because replacing it is more work:
     how = FITTING_HOW
     # Also make the base 'humanname' prototype to format into:
-    humanname_base = '{}'
+    humanname_base = '{}e-range {}'
     # And the list of fits that we made:
     fits = []
     for params in how[varname]:
@@ -286,7 +291,9 @@ def fit(varname, model, epoch, energy, flux, dflux, starttime, stoptime,
             print('='*80)
             continue
         # Finally, we can append everything to the list that we found.
-        humanname = humanname_base.format(namesauce)
+        humanname = humanname_base.format(namesauce,
+                                          params['e_range'] if 'e_range' in params \
+                                              else energy_trunc(varname))
         # We have everything else, so we can just add it to the list:
         fits.append((humanname,
                      cenergy[e_startidx:e_stopidx],

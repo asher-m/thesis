@@ -13,8 +13,8 @@ import types
 # This import is a bit ugly, but it's less ugly than retyping this every time:
 from common import fit, fit_prep, \
     PLOTTING_XLIM_LOWER, PLOTTING_XLIM_UPPER, PLOTTING_YLIM_LOWER, \
-    PLOTTING_YLIM_UPPER, REDS_RAW, GREENS_RAW, BLUES_RAW, PLOTTING_FIGSIZE
-from models import fisk_2008_eq38_modified as model
+    PLOTTING_YLIM_UPPER, REDS_RAW, GREENS_RAW, BLUES_RAW, PLOTTING_FIGSIZE, \
+    MODEL as model
 
 
 
