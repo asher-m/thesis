@@ -84,7 +84,6 @@ BLUES = (cycler('color', BLUES_RAW) * cycler('linestyle', ['-']))
 def get_eta_squared(B_vec):
     """ Function to perform array mean(s) for mag data.
     Calculate eta-squared. """
-    breakpoint()
     B0_vec = numpy.nanmean(B_vec, axis=0)
     B0_hat = B0_vec / numpy.linalg.norm(B0_vec)
     dB_par = numpy.sum((B_vec - B0_vec) * B0_hat, axis=1)
