@@ -4,28 +4,26 @@ Perform a fit on the data according to some model, as provided.
 """
 
 import argparse
-import json
 import matplotlib.pyplot as plt
 import numpy
-import os
 import pickle
 import sys
 import types
 
 # This import is a bit ugly, but it's less ugly than retyping this every time:
-from common import get_eta_squared, fit, fit_prep, \
+from common import fit, fit_prep, \
     PLOTTING_XLIM_LOWER, PLOTTING_XLIM_UPPER, PLOTTING_YLIM_LOWER, \
     PLOTTING_YLIM_UPPER, REDS_RAW, GREENS_RAW, BLUES_RAW, PLOTTING_FIGSIZE
 from models import fisk_2008_eq38_modified as model
 
 
 
-param_table = {}
+params = {}
 """ Table of parameters to save. """
 
-def main(events_file, mag_file, varnames):
+def main(events_file, varnames):
     # First get the param dictionary:
-    global param_table
+    global params
 
     # Open the saved event times:
     with open(events_file, 'rb') as fp:
@@ -33,32 +31,11 @@ def main(events_file, mag_file, varnames):
         # Note that e is like: [((t0_start, y0_start), (t0_stop, y0_stop)),
         #                       ((t1_start, y1_start), (t1_stop, y1_stop)), ...]
 
-    with open(mag_file, 'rb') as fp:
-        mag = pickle.load(fp)
-    mag_str = mag['mag']
-    mag_epoch = mag['epoch']
-
     # Now, for each event (row) in e:
     for i, event in enumerate(e):
         # Cut all vars in time that we're looking at:
         starttime = event[0, 0]
         stoptime = event[1, 0]
-
-        # Do the math for the B field if it's not there yet.  First make
-        # key for the event:
-        param_table_keyname = "{}_to_{}".format(starttime.strftime('%F-%H-%M'),
-                                                stoptime.strftime('%F-%H-%M'))
-        # Then check if the key's in the dict:
-        if param_table_keyname not in param_table:
-            # We need to add this information to it:
-            eta_squared = get_eta_squared(mag_str[numpy.searchsorted(mag_epoch,
-                                                                     starttime)\
-                                                  :numpy.searchsorted(mag_epoch,
-                                                                      stoptime)])
-            # Create the dict:
-            param_table[param_table_keyname] = {}
-            # Add eta-squared to it.
-            param_table[param_table_keyname]['eta-squared'] = eta_squared
 
         # Set figsize:
         plt.figure(figsize=PLOTTING_FIGSIZE)
@@ -101,10 +78,6 @@ def main(events_file, mag_file, varnames):
                 # Also plot the points used for the fit:
                 plt.plot(e, f, "o", color=p[-1].get_color())
 
-                # Now add the params to the table:
-                param_table[param_table_keyname][varname + ': ' + humanname] = popt[-1]
-
-
             if plot_this_spectrum is True:
                 # Also plot the spectrum:
                 startidx = numpy.searchsorted(flux.epoch, starttime)
@@ -141,17 +114,9 @@ def main(events_file, mag_file, varnames):
         plt.close()
 
 if __name__ == "__main__":
-    # Open the old param table if it exists.
-    if os.path.exists('../data/param_table.json'):
-        with open('../data/param_table.json', 'r') as fp:
-            param_table = json.load(fp)
-
     parser = argparse.ArgumentParser()
     parser.add_argument(help='events definition file (from clickthrough)',
                         dest='events_file',
-                        action='store')
-    parser.add_argument(help='mag file from field concat script',
-                        dest='mag_file',
                         action='store')
     parser.add_argument(help='name of the variable to fit, can be'
                         ' \'ChanP\', \'ChanT\', \'ChanR\', \'all\', or some '
@@ -164,10 +129,6 @@ if __name__ == "__main__":
         # If this failed, there's a typo in your command line args:
         assert n in ('ChanP', 'ChanT', 'ChanR', 'all')
     if args.varnames[0] != 'all':
-        main(args.events_file, args.mag_file, args.varnames)
+        main(args.events_file, args.varnames)
     else:
-        main(args.events_file, args.mag_file, ('ChanP', 'ChanT', 'ChanR'))
-
-    # Lastly, if called as a script, we have to save the param table:
-    with open('../data/param_table.json', 'w') as fp:
-        json.dump(param_table, fp, sort_keys=True, indent=4)
+        main(args.events_file, ('ChanP', 'ChanT', 'ChanR'))

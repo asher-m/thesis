@@ -18,7 +18,7 @@ from models import fisk_2008_eq38_modified as model
 
 
 
-def main(events_file, mag_file, varnames):
+def main(events_file, varnames):
     # Open the saved event times:
     with open(events_file, 'rb') as fp:
         e = pickle.load(fp)
@@ -130,9 +130,6 @@ if __name__ == "__main__":
     parser.add_argument(help='events definition file (from clickthrough)',
                         dest='events_file',
                         action='store')
-    parser.add_argument(help='mag file from field concat script',
-                        dest='mag_file',
-                        action='store')
     parser.add_argument(help='name of the variable to fit, can be'
                         ' \'ChanP\', \'ChanT\', \'ChanR\', \'all\', or some '
                         'combination of these, (not including \'all\')',
@@ -144,6 +141,6 @@ if __name__ == "__main__":
         # If this failed, there's a typo in your command line args:
         assert n in ('ChanP', 'ChanT', 'ChanR', 'all')
     if args.varnames[0] != 'all':
-        main(args.events_file, args.mag_file, args.varnames)
+        main(args.events_file, args.varnames)
     else:
-        main(args.events_file, args.mag_file, ('ChanP', 'ChanT', 'ChanR'))
+        main(args.events_file, ('ChanP', 'ChanT', 'ChanR'))
