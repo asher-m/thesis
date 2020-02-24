@@ -26,6 +26,11 @@ import spacepy.pycdf
 INT_PER_DAY = 24
 # For minutes, for example, this would be 1440.
 
+PAR = (0, 30)
+PERP = (75, 105)
+APAR = (150, 180)
+
+
 
 def main(varname):
     files = isois.get_latest('psp_isois-epilo_l2-ic')
@@ -45,7 +50,16 @@ def main(varname):
     # Initialize these as the right size to avoid copying the array every time:
     maxn = len(files) * INT_PER_DAY
     flux_mean = numpy.empty(shape=(maxn, lenn), dtype=numpy.float)
+    # Also break these out so we have parallel and antiparallel:
+    flux_mean_par = numpy.empty(shape=(maxn, lenn), dtype=numpy.float)
+    flux_mean_perp = numpy.empty(shape=(maxn, lenn), dtype=numpy.float)
+    flux_mean_apar = numpy.empty(shape=(maxn, lenn), dtype=numpy.float)
+    # Also get deltas:
     dflux_mean = numpy.empty(shape=(maxn, lenn), dtype=numpy.float)
+    dflux_mean_par = numpy.empty(shape=(maxn, lenn), dtype=numpy.float)
+    dflux_mean_perp = numpy.empty(shape=(maxn, lenn), dtype=numpy.float)
+    dflux_mean_apar = numpy.empty(shape=(maxn, lenn), dtype=numpy.float)
+    # Then the epoch and energy depend of each of these:
     epoch_mean = numpy.empty(maxn, dtype=datetime.datetime)
     energy_agg = numpy.empty(shape=(maxn, lenn), dtype=numpy.float)
 
@@ -70,6 +84,8 @@ def main(varname):
                 dflux[dflux < 0] = numpy.nan
                 energy = f['H_{}_Energy'.format(varname)][...]
                 energy[energy < 0] = numpy.nan
+                pa = f['PA_{}'.format(varname)][...]
+                pa[pa < 0] = numpy.nan
 
                 # Cut out elevation 5:
                 flux[:, elevation == 5, :] = numpy.nan
@@ -85,6 +101,10 @@ def main(varname):
                         stoptime = starttime + datetime.timedelta(days=1) / INT_PER_DAY
                         startidx = numpy.searchsorted(epoch, starttime)
                         stopidx = numpy.searchsorted(epoch, stoptime)
+
+                        # Just continue if we find nothing in this time range:
+                        if startidx == stopidx:
+                            continue
 
                         # We need to check if the energy binning across these times is
                         # consistent so we can in fact average.  If it's not, we need
@@ -103,14 +123,29 @@ def main(varname):
                             # Need to break and continue...
                             continue
 
+                        # import pdb; pdb.set_trace()
+
                         # Here we average over look direction (axis 1) and time (axis 0):
-                        flux_mean[j] = numpy.reshape(numpy.nanmean(numpy.nanmean(flux[startidx:stopidx], axis=1),
-                                                                   axis=0), (1, lenn))
-                        dflux_mean[j] = numpy.reshape(uncert_prop(uncert_prop(dflux[startidx:stopidx], 1), 0),
-                                                      (1, lenn))
+                        flux_mean[j] = numpy.reshape(numpy.nanmean(numpy.nanmean(flux[startidx:stopidx], axis=1), axis=0), (1, lenn))
+                        dflux_mean[j] = numpy.reshape(uncert_prop(uncert_prop(dflux[startidx:stopidx], 1), 0), (1, lenn))
+                        # Make the parallel flux slice:
+                        par_slice = numpy.logical_or(numpy.logical_and(PAR[0] <= pa[startidx:stopidx], pa[startidx:stopidx] <= PAR[1]), numpy.isnan(pa[startidx:stopidx]))
+                        flux_mean_par[j] = numpy.reshape(numpy.nanmean(flux[startidx:stopidx][par_slice], axis=0), (1, lenn))
+                        dflux_mean_par[j] = numpy.reshape(uncert_prop(dflux[startidx:stopidx][par_slice], 0), (1, lenn))
+                        # Make the perpendicular flux slice:
+                        perp_slice = numpy.logical_or(numpy.logical_and(PERP[0] <= pa[startidx:stopidx], pa[startidx:stopidx] <= PERP[1]), numpy.isnan(pa[startidx:stopidx]))
+                        flux_mean_perp[j] = numpy.reshape(numpy.nanmean(flux[startidx:stopidx][perp_slice], axis=0), (1, lenn))
+                        dflux_mean_perp[j] = numpy.reshape(uncert_prop(dflux[startidx:stopidx][perp_slice], 0), (1, lenn))
+                        # Make the antiparallel flux slice:
+                        apar_slice = numpy.logical_or(numpy.logical_and(APAR[0] <= pa[startidx:stopidx], pa[startidx:stopidx] <= APAR[1]), numpy.isnan(pa[startidx:stopidx]))
+                        flux_mean_apar[j] = numpy.reshape(numpy.nanmean(flux[startidx:stopidx][apar_slice], axis=0), (1, lenn))
+                        dflux_mean_apar[j] = numpy.reshape(uncert_prop(dflux[startidx:stopidx][apar_slice], 0), (1, lenn))
+
                         epoch_mean[j] = starttime + datetime.timedelta(days=1) / INT_PER_DAY / 2
+
                         # If it's constant over the entire file, which we've
-                        # checked, we can just use the first one:
+                        # checked, we can just use the first one.  Need this
+                        # extra check in case we have an empty time period:
                         if startidx < energy.shape[0]:
                             energy_agg[j] = energy[startidx, 0, :]
                         else:
@@ -125,6 +160,12 @@ def main(varname):
               'wb') as fp:
         pickle.dump({'flux':flux_mean[:j],
                      'dflux':dflux_mean[:j],
+                     'flux_par':flux_mean_par[:j],
+                     'dflux_par':dflux_mean_par[:j],
+                     'flux_perp':flux_mean_perp[:j],
+                     'dflux_perp':dflux_mean_perp[:j],
+                     'flux_apar':flux_mean_apar[:j],
+                     'dflux_apar':dflux_mean_apar[:j],
                      'epoch':epoch_mean[:j],
                      'energy':energy_agg[:j]},
                     fp)
