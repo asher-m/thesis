@@ -74,7 +74,7 @@ def main(varname):
         j = 0
 
         for ff in files:
-            print('Starting file {}...'.format(os.path.basename(ff)))
+            print('{}: Starting file {}...'.format(varname, os.path.basename(ff)))
 
             # Open each file:
             with spacepy.pycdf.CDF(ff) as f:
