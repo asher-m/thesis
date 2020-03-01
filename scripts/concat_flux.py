@@ -137,8 +137,8 @@ def main(varname):
                             aflux[~aslice] = numpy.nan
                             adflux = copy.copy(dflux[startidx:stopidx])
                             adflux[~aslice] = numpy.nan
-                            flux_mean_par[j] = numpy.reshape(numpy.nanmean(aflux, axis=0), (1, lenn))
-                            dflux_mean_par[j] = numpy.reshape(uncert_prop(adflux, 0), (1, lenn))
+                            flux_mean_par[j] = numpy.reshape(numpy.nanmean(numpy.nanmean(aflux, axis=1), axis=0), (1, lenn))
+                            dflux_mean_par[j] = numpy.reshape(uncert_prop(uncert_prop(adflux, 1), 0), (1, lenn))
 
                         epoch_mean[j] = starttime + datetime.timedelta(days=1) / INT_PER_DAY / 2
 
