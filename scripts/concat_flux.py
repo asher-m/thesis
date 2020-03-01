@@ -8,6 +8,7 @@ variables along some axis.
 # Looks like I should use 'ic' files
 
 import argparse
+import copy
 import datetime
 import numpy
 import os
@@ -123,23 +124,21 @@ def main(varname):
                             # Need to break and continue...
                             continue
 
-                        # import pdb; pdb.set_trace()
-
                         # Here we average over look direction (axis 1) and time (axis 0):
                         flux_mean[j] = numpy.reshape(numpy.nanmean(numpy.nanmean(flux[startidx:stopidx], axis=1), axis=0), (1, lenn))
                         dflux_mean[j] = numpy.reshape(uncert_prop(uncert_prop(dflux[startidx:stopidx], 1), 0), (1, lenn))
-                        # Make the parallel flux slice:
-                        par_slice = numpy.logical_or(numpy.logical_and(PAR[0] <= pa[startidx:stopidx], pa[startidx:stopidx] <= PAR[1]), numpy.isnan(pa[startidx:stopidx]))
-                        flux_mean_par[j] = numpy.reshape(numpy.nanmean(flux[startidx:stopidx][par_slice], axis=0), (1, lenn))
-                        dflux_mean_par[j] = numpy.reshape(uncert_prop(dflux[startidx:stopidx][par_slice], 0), (1, lenn))
-                        # Make the perpendicular flux slice:
-                        perp_slice = numpy.logical_or(numpy.logical_and(PERP[0] <= pa[startidx:stopidx], pa[startidx:stopidx] <= PERP[1]), numpy.isnan(pa[startidx:stopidx]))
-                        flux_mean_perp[j] = numpy.reshape(numpy.nanmean(flux[startidx:stopidx][perp_slice], axis=0), (1, lenn))
-                        dflux_mean_perp[j] = numpy.reshape(uncert_prop(dflux[startidx:stopidx][perp_slice], 0), (1, lenn))
-                        # Make the antiparallel flux slice:
-                        apar_slice = numpy.logical_or(numpy.logical_and(APAR[0] <= pa[startidx:stopidx], pa[startidx:stopidx] <= APAR[1]), numpy.isnan(pa[startidx:stopidx]))
-                        flux_mean_apar[j] = numpy.reshape(numpy.nanmean(flux[startidx:stopidx][apar_slice], axis=0), (1, lenn))
-                        dflux_mean_apar[j] = numpy.reshape(uncert_prop(dflux[startidx:stopidx][apar_slice], 0), (1, lenn))
+                        # Handle all the angled stuff:
+                        for ang in (PAR, PERP, APAR):
+                            # Make the flux slice:
+                            aslice = numpy.logical_or(numpy.logical_and(ang[0] <= pa[startidx:stopidx], pa[startidx:stopidx] <= ang[1]), numpy.isnan(pa[startidx:stopidx]))
+                            # While the old way technically worked, this is more
+                            # clear and should be "guaranteed" to work.
+                            aflux = copy.copy(flux[startidx:stopidx])
+                            aflux[~aslice] = numpy.nan
+                            adflux = copy.copy(dflux[startidx:stopidx])
+                            adflux[~aslice] = numpy.nan
+                            flux_mean_par[j] = numpy.reshape(numpy.nanmean(aflux, axis=0), (1, lenn))
+                            dflux_mean_par[j] = numpy.reshape(uncert_prop(adflux, 0), (1, lenn))
 
                         epoch_mean[j] = starttime + datetime.timedelta(days=1) / INT_PER_DAY / 2
 
