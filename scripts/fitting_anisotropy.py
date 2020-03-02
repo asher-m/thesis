@@ -11,7 +11,7 @@ import sys
 import types
 
 # This import is a bit ugly, but it's less ugly than retyping this every time:
-from common import fit, fit_prep, \
+from common import fit, fit_prep, cut_like, \
     PLOTTING_XLIM_LOWER, PLOTTING_XLIM_UPPER, PLOTTING_YLIM_LOWER, \
     PLOTTING_YLIM_UPPER, REDS_RAW, GREENS_RAW, BLUES_RAW, PLOTTING_FIGSIZE
 from models import fisk_2008_eq38_modified as model
@@ -25,11 +25,26 @@ def main(events_file, varnames):
         # Note that e is like: [((t0_start, y0_start), (t0_stop, y0_stop)),
         #                       ((t1_start, y1_start), (t1_stop, y1_stop)), ...]
 
+    with open('../data/magfield.pickle{}'.format(sys.version_info[0]),
+              'rb') as fp:
+        arrs = pickle.load(fp)
+    mag = types.SimpleNamespace(**arrs)
+
     # Now, for each event (row) in e:
     for i, event in enumerate(e):
         # Cut all vars in time that we're looking at:
         starttime = event[0, 0]
         stoptime = event[1, 0]
+
+        # Determine if magfield is in/out or changes direction:
+        c_mag_epoch, c_mag = cut_like(mag.epoch, (starttime, stoptime),
+                                      mag.mag, cutside='both')
+        if numpy.all(c_mag[:, 0][~numpy.isnan(c_mag[:, 0])] > 0):
+            pardirection = 'parallel is out'
+        elif numpy.all(c_mag[:, 0][~numpy.isnan(c_mag[:, 0])] < 0):
+            pardirection = 'parallel is in'
+        else:
+            pardirection = 'parallel changes in or out'
 
         fig, axes = plt.subplots(nrows=3, ncols=1,
                                  figsize=(PLOTTING_FIGSIZE[0],
@@ -75,7 +90,8 @@ def main(events_file, varnames):
                 here_title, fff = tt
                 # I'm so sorry...
                 ax = axes[s]
-                ax.set_title('Event ID {:02d}: {}'.format(i, here_title))
+                ax.set_title('Event ID {:02d}: {} ({})'.format(i, here_title,
+                                                               pardirection))
                 ff = fff[0]
                 here_flux = fff[1]
                 here_dflux = fff[2]
