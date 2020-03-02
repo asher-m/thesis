@@ -25,7 +25,7 @@ sporadic and makes this script not work/display nicely). """
 YLIM = (2e-3, 2e0)
 
 # Open files:
-with open('../data/magfield_eta_squared_daily_avg.pickle{}'\
+with open('../data/B_eta_squared_daily_avg.pickle{}'\
           .format(sys.version_info[0]), 'rb') as fp:
     arr = pickle.load(fp)
     etasq_epoch = arr['epoch']

@@ -21,9 +21,11 @@ import sys
 
 import spacepy.plot
 
+from common import EVENTS_FILE
 
 
-def main(click=False, review=None):
+
+def main(events_file, review=False):
     """ Main function to generate plot of all files that can be found in
     data dir.
 
@@ -97,22 +99,26 @@ def main(click=False, review=None):
     plt.yscale('log')
 
     # Now we can call the review or clickthrough function:
-    if click is True:
-        clickthrough()
-    elif review is not None:
-        reviewthrough(review, plotting_at)
+    if review is False:
+        clickthrough(events_file)
+    else:
+        reviewthrough(events_file, plotting_at)
 
-def clickthrough():
+def clickthrough(events_file):
     # This is preliminary, but might do max and half max..?
-    c = spacepy.plot.utils.EventClicker(n_phases=2, interval=datetime.timedelta(days=30))
+    c = spacepy.plot.utils.EventClicker(n_phases=2,
+                                        interval=datetime.timedelta(days=30))
     c.analyze()
 
-    # Lastly, dump the selected event times:
-    # with open('../data/ic_event_clickthrough_times_{}.pickle{}'\
-    #           .format(datetime.datetime.now().strftime('%F-%H%M%S'),
-    #                   sys.version_info[0]), 'wb') as fp:
-    with open('../data/ic_event_clickthrough_times.pickle{}'\
-              .format(sys.version_info[0]), 'wb') as fp:
+    if os.path.exists(events_file):
+        os.rename(events_file, os.path.join(os.path.dirname(events_file),
+                                            os.path.basename(events_file).split('.')[0] \
+                                            + '.pickle{}'.format(sys.version_info[0]) \
+                                            + '.back-{}'.format(datetime\
+                                                                .datetime\
+                                                                .now()\
+                                                                .strftime('%Y%m%d%H%M'))))
+    with open(events_file) as fp:
         pickle.dump(c.get_events(), fp)
 
 def reviewthrough(events_file, plotting_at):
@@ -132,25 +138,11 @@ def reviewthrough(events_file, plotting_at):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument('-c', help='enable script for clickthrough',
-                        dest='click',
-                        action='store_true')
-    group.add_argument('-r', help='enable script for event review',
+    parser.add_argument('-r', help='enable script for event review',
                         dest='review',
                         action='store_true')
-    parser.add_argument(help='events definition file (from clickthrough)',
-                        dest='events_file',
-                        action='store',
-                        nargs='?')
     args = parser.parse_args()
-    if args.review and not args.events_file:
-        parser.error('option -r requires events_file!')
-    if args.click is True:
-        main(click=True)
-    elif args.review is True:
-        main(review=args.events_file)
+    if args.review is True:
+        main(EVENTS_FILE, args.review)
     else:
-        # This shouldn't be able to happen:
-        raise RuntimeError('Must either reivew events or clickthrough events.'\
-                           '\nEither is required.')
+        main(EVENTS_FILE)

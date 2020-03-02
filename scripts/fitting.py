@@ -11,7 +11,7 @@ import sys
 import types
 
 # This import is a bit ugly, but it's less ugly than retyping this every time:
-from common import fit, fit_prep, \
+from common import fit, fit_prep, EVENTS_FILE, \
     PLOTTING_XLIM_LOWER, PLOTTING_XLIM_UPPER, PLOTTING_YLIM_LOWER, \
     PLOTTING_YLIM_UPPER, REDS_RAW, GREENS_RAW, BLUES_RAW, PLOTTING_FIGSIZE, \
     MODEL as model
@@ -115,9 +115,6 @@ def main(events_file, varnames):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument(help='events definition file (from clickthrough)',
-                        dest='events_file',
-                        action='store')
     parser.add_argument(help='name of the variable to fit, can be'
                         ' \'ChanP\', \'ChanT\', \'ChanR\', \'all\', or some '
                         'combination of these, (not including \'all\')',
@@ -129,6 +126,6 @@ if __name__ == "__main__":
         # If this failed, there's a typo in your command line args:
         assert n in ('ChanP', 'ChanT', 'ChanR', 'all')
     if args.varnames[0] != 'all':
-        main(args.events_file, args.varnames)
+        main(EVENTS_FILE, args.varnames)
     else:
-        main(args.events_file, ('ChanP', 'ChanT', 'ChanR'))
+        main(EVENTS_FILE, ('ChanP', 'ChanT', 'ChanR'))

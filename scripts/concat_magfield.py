@@ -71,7 +71,7 @@ def main():
         j += flenn
 
     # This will only work with the same version of python as when used with this script:
-    with open('../data/magfield.pickle{}'.format(sys.version_info[0]),
+    with open('../data/B.pickle{}'.format(sys.version_info[0]),
               'wb') as fp:
         pickle.dump({'mag':cmag[:j],
                      'epoch':cepoch[:j]},

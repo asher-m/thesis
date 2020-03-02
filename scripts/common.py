@@ -9,12 +9,16 @@ import collections.abc
 import numpy
 import scipy
 import scipy.optimize
+import sys
 
 from cycler import cycler
 
 from models import fisk_2008_eq38_modified as model
 
 
+
+EVENTS_FILE = '../data/flux_event_times_cons.pickle{}'.format(sys.version_info[0])
+MAG_FILE = '../data/B.pickle{}'.format(sys.version_info[0])
 
 # Just to make this explicit:
 MODEL = model

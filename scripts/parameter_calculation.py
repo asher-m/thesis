@@ -5,7 +5,6 @@ Created on Mon Feb 24 00:11:48 2020
 @author: asher
 """
 
-import argparse
 import json
 import numpy
 import pickle
@@ -13,7 +12,8 @@ import sys
 import types
 
 # This import is a bit ugly, but it's less ugly than retyping this every time:
-from common import get_eta_squared, fit, fit_prep, MODEL as model
+from common import get_eta_squared, fit, fit_prep, MODEL as model, \
+    EVENTS_FILE, MAG_FILE
 
 
 
@@ -97,14 +97,4 @@ def main(events_file, mag_file):
         pickle.dump(params_complete, fp)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(help='events definition file (from clickthrough)',
-                        dest='events_file',
-                        action='store')
-    parser.add_argument(help='mag file from field concat script',
-                        dest='mag_file',
-                        action='store')
-    args = parser.parse_args()
-    main(args.events_file, args.mag_file)
-
-
+    main(EVENTS_FILE, MAG_FILE)
