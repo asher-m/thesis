@@ -128,7 +128,9 @@ def main(varname):
                         flux_mean[j] = numpy.reshape(numpy.nanmean(numpy.nanmean(flux[startidx:stopidx], axis=1), axis=0), (1, lenn))
                         dflux_mean[j] = numpy.reshape(uncert_prop(uncert_prop(dflux[startidx:stopidx], 1), 0), (1, lenn))
                         # Handle all the angled stuff:
-                        for ang in (PAR, PERP, APAR):
+                        for ang, outflux, outdflux in ((PAR, flux_mean_par, dflux_mean_par),
+                                                       (PERP, flux_mean_perp, dflux_mean_perp),
+                                                       (APAR, flux_mean_apar, dflux_mean_apar)):
                             # Make the flux slice:
                             aslice = numpy.logical_or(numpy.logical_and(ang[0] <= pa[startidx:stopidx], pa[startidx:stopidx] <= ang[1]), numpy.isnan(pa[startidx:stopidx]))
                             # While the old way technically worked, this is more
@@ -137,8 +139,8 @@ def main(varname):
                             aflux[~aslice] = numpy.nan
                             adflux = copy.copy(dflux[startidx:stopidx])
                             adflux[~aslice] = numpy.nan
-                            flux_mean_par[j] = numpy.reshape(numpy.nanmean(numpy.nanmean(aflux, axis=1), axis=0), (1, lenn))
-                            dflux_mean_par[j] = numpy.reshape(uncert_prop(uncert_prop(adflux, 1), 0), (1, lenn))
+                            outflux[j] = numpy.reshape(numpy.nanmean(numpy.nanmean(aflux, axis=1), axis=0), (1, lenn))
+                            outdflux[j] = numpy.reshape(uncert_prop(uncert_prop(adflux, 1), 0), (1, lenn))
 
                         epoch_mean[j] = starttime + datetime.timedelta(days=1) / INT_PER_DAY / 2
 
