@@ -60,6 +60,10 @@ def main(varname):
     dflux_mean_par = numpy.empty(shape=(maxn, lenn), dtype=numpy.float)
     dflux_mean_perp = numpy.empty(shape=(maxn, lenn), dtype=numpy.float)
     dflux_mean_apar = numpy.empty(shape=(maxn, lenn), dtype=numpy.float)
+    # And get the count stats so we have some idea of the number of bins:
+    stats_par = numpy.empty(shape=(maxn, 4), dtype=numpy.uint)
+    stats_perp = numpy.empty(shape=(maxn, 4), dtype=numpy.uint)
+    stats_apar = numpy.empty(shape=(maxn, 4), dtype=numpy.uint)
     # Then the epoch and energy depend of each of these:
     epoch_mean = numpy.empty(maxn, dtype=datetime.datetime)
     energy_agg = numpy.empty(shape=(maxn, lenn), dtype=numpy.float)
@@ -128,11 +132,11 @@ def main(varname):
                         flux_mean[j] = numpy.reshape(numpy.nanmean(numpy.nanmean(flux[startidx:stopidx], axis=1), axis=0), (1, lenn))
                         dflux_mean[j] = numpy.reshape(uncert_prop(uncert_prop(dflux[startidx:stopidx], 1), 0), (1, lenn))
                         # Handle all the angled stuff:
-                        for ang, outflux, outdflux in ((PAR, flux_mean_par, dflux_mean_par),
-                                                       (PERP, flux_mean_perp, dflux_mean_perp),
-                                                       (APAR, flux_mean_apar, dflux_mean_apar)):
+                        for ang, outflux, outdflux, outstats in ((PAR, flux_mean_par, dflux_mean_par, stats_par),
+                                                                 (PERP, flux_mean_perp, dflux_mean_perp, stats_perp),
+                                                                 (APAR, flux_mean_apar, dflux_mean_apar, stats_apar)):
                             # Make the flux slice:
-                            aslice = numpy.logical_or(numpy.logical_and(ang[0] <= pa[startidx:stopidx], pa[startidx:stopidx] <= ang[1]), numpy.isnan(pa[startidx:stopidx]))
+                            aslice = numpy.logical_and(ang[0] <= pa[startidx:stopidx], pa[startidx:stopidx] <= ang[1])
                             # While the old way technically worked, this is more
                             # clear and should be "guaranteed" to work.
                             aflux = copy.copy(flux[startidx:stopidx])
@@ -141,6 +145,16 @@ def main(varname):
                             adflux[~aslice] = numpy.nan
                             outflux[j] = numpy.reshape(numpy.nanmean(numpy.nanmean(aflux, axis=1), axis=0), (1, lenn))
                             outdflux[j] = numpy.reshape(uncert_prop(uncert_prop(adflux, 1), 0), (1, lenn))
+                            # We want to know the stats on how many look directions we have
+                            # that satisfy this range of pitch angles.  So, let's take
+                            # min/max/median in time after summing across dim 1:
+                            counts = numpy.sum(aslice, axis=1)
+                            fmin = numpy.nanmin(counts)
+                            fmax = numpy.nanmax(counts)
+                            fmedian = numpy.nanmedian(counts)
+                            # Would also be helpful to know of how many we chose min/max/median, so:
+                            fidxcounts = len(counts)  # More readable than counts.shape[0] and does the same.
+                            outstats[j] = (fmin, fmedian, fmax, fidxcounts)
 
                         epoch_mean[j] = starttime + datetime.timedelta(days=1) / INT_PER_DAY / 2
 
@@ -168,7 +182,10 @@ def main(varname):
                      'flux_apar':flux_mean_apar[:j],
                      'dflux_apar':dflux_mean_apar[:j],
                      'epoch':epoch_mean[:j],
-                     'energy':energy_agg[:j]},
+                     'energy':energy_agg[:j],
+                     'stats_par':stats_par[:j],
+                     'stats_perp':stats_perp[:j],
+                     'stats_apar':stats_apar[:j]},
                     fp)
 
 if __name__ == "__main__":
