@@ -70,32 +70,40 @@ def main(events_file, mag_file, varnames):
             flux = types.SimpleNamespace(**arrs)
 
             fits = {
-                    'Parallel': [fit(varname, model, flux.epoch, flux.energy,
+                    'Parallel': {'fit': fit(varname, model, flux.epoch, flux.energy,
                                      flux.flux_par, flux.dflux_par, starttime,
                                      stoptime, i, namesauce='parallel'),
-                                 flux.flux_par, flux.dflux_par],
-                    'Perpendicular': [fit(varname, model, flux.epoch, flux.energy,
+                                 'flux': flux.flux_par,
+                                 'dflux': flux.dflux_par,
+                                 'stats': flux.stats_par},
+                    'Perpendicular': {'fit': fit(varname, model, flux.epoch, flux.energy,
                                          flux.flux_perp, flux.dflux_perp,
                                          starttime, stoptime, i,
                                          namesauce='perpendicular'),
-                                      flux.flux_perp, flux.dflux_perp],
-                    'Antiparallel': [fit(varname, model, flux.epoch, flux.energy,
+                                      'flux': flux.flux_perp,
+                                      'dflux': flux.dflux_perp,
+                                      'stats': flux.stats_perp},
+                    'Antiparallel': {'fit': fit(varname, model, flux.epoch, flux.energy,
                                          flux.flux_apar, flux.dflux_apar,
                                          starttime, stoptime, i,
                                          namesauce='antiparallel'),
-                                     flux.flux_apar, flux.dflux_apar]
+                                     'flux': flux.flux_apar,
+                                     'dflux': flux.dflux_apar,
+                                     'stats': flux.stats_apar}
                     }
 
-            for s, tt in enumerate(fits.items()):
-                here_title, fff = tt
+            for setnum, fluxset in enumerate(fits.items()):
+                here_title, here_fluxinfo = fluxset
                 # I'm so sorry...
-                ax = axes[s]
+                ax = axes[setnum]
                 ax.set_title('Event ID {:02d}: {} ({})'.format(i, here_title,
                                                                pardirection))
-                ff = fff[0]
-                here_flux = fff[1]
-                here_dflux = fff[2]
-                for k, f in enumerate(ff):
+                # See the fluxset dictionary for descriptions of these:
+                here_fit = here_fluxinfo['fit']
+                here_flux = here_fluxinfo['flux']
+                here_dflux = here_fluxinfo['dflux']
+                here_stats = here_fluxinfo['stats']
+                for k, f in enumerate(here_fit):
                     humanname, e, f, df, popt, pcov = f
 
                     p = ax.plot(energy_range,
@@ -123,6 +131,22 @@ def main(events_file, mag_file, varnames):
                             yerr=cdflux,
                             label='{}'.format(varname),
                             color=colors[-1])
+
+                # Include min/median/max/counts information for this plot:
+                _, stats = cut_like(flux.epoch, (starttime, stoptime), here_stats, cutside='both')
+                hmin = numpy.min(stats[:, 0])
+                # This is either clunky or elegant, depending on your perspective:
+                hmedian = numpy.median(numpy.repeat(stats[:, 1], stats[:, 3]))
+                hmax = numpy.max(stats[:, 2])
+                htotal = numpy.sum(stats[:, 3])
+                textstr = str(f'min:    {hmin}\n'
+                              f'median: {hmedian}\n'
+                              f'max:    {hmax}\n'
+                              f'total points (in time): {htotal}\n'
+                              f'stats are per point in time (per look direction)')
+                ax.text(0.02, 0.02, textstr, transform=ax.transAxes, 
+                        verticalalignment='bottom', horizontalalignment='left',
+                        fontdict={'family':'monospace'})
 
                 ax.legend(loc=1, prop={'family':'monospace'})
                 # Nice to have on every plot:
