@@ -61,9 +61,9 @@ def main(varname):
     dflux_mean_perp = numpy.empty(shape=(maxn, lenn), dtype=numpy.float)
     dflux_mean_apar = numpy.empty(shape=(maxn, lenn), dtype=numpy.float)
     # And get the count stats so we have some idea of the number of bins:
-    stats_par = numpy.empty(shape=(maxn, 4), dtype=numpy.uint)
-    stats_perp = numpy.empty(shape=(maxn, 4), dtype=numpy.uint)
-    stats_apar = numpy.empty(shape=(maxn, 4), dtype=numpy.uint)
+    stats_par = numpy.empty(shape=(maxn, 4), dtype=numpy.int)
+    stats_perp = numpy.empty(shape=(maxn, 4), dtype=numpy.int)
+    stats_apar = numpy.empty(shape=(maxn, 4), dtype=numpy.int)
     # Then the epoch and energy depend of each of these:
     epoch_mean = numpy.empty(maxn, dtype=datetime.datetime)
     energy_agg = numpy.empty(shape=(maxn, lenn), dtype=numpy.float)
