@@ -20,7 +20,7 @@ def rebin(epoch, flux, pa, sa, cadence=None):
     
     Cadence in nanoseconds; default None averages entire range. """
     # Look dir:
-    flux_omni = spacepy.datamanager.rebin(flux, pa, [0, 180], axis=1)
+    flux_omni = spacepy.datamanager.rebin(flux, sa, [0, 180], axis=1)
     lookdir_bins = numpy.linspace(0, 180, 4)
     flux_pa = spacepy.datamanager.rebin(flux, pa, lookdir_bins, axis=1)
     flux_sa = spacepy.datamanager.rebin(flux, sa, lookdir_bins, axis=1)
