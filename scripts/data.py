@@ -13,10 +13,11 @@ import sys
 import isois
 import spacepy
 import spacepy.pycdf
+import spacepy.pycdf.istp
 
 
 EVENTS_FILE = \
-    '../data/TEST_flux_event_times_cons.pickle{}'.format(sys.version_info[0])
+    '../data/flux_event_times_cons.pickle{}'.format(sys.version_info[0])
 MAG_FILE = '../data/B.pickle{}'.format(sys.version_info[0])
 DATASETS = {
     'psp_isois-epilo_l2-ic': [
@@ -41,7 +42,7 @@ DATASETS = {
 }
 
 
-def read_data(verbose=False, raw_epoch=True):
+def read_data(verbose=True, raw_epoch=True):
     """ Function to read event data from CDFs (without concat). """
     outdata = []
 
@@ -62,8 +63,8 @@ def read_data(verbose=False, raw_epoch=True):
             if verbose:
                 print('\tWorking on dataset {}:'.format(d))
 
-            event_data = {v: [] for g in DATASETS[d]
-                          for v in g.values()}
+            event_data = {g[v]: [] for g in DATASETS[d]
+                          for v in g if not v == 'reverse'}
             for i in range((stopday - strtday).days):  # open file for everyday
                 f = isois.get_latest(
                     d, date=(strtday + i * datetime.timedelta(days=1)).strftime('%Y%m%d'))[0]
@@ -73,6 +74,8 @@ def read_data(verbose=False, raw_epoch=True):
                 cdf = spacepy.pycdf.CDF(f)
                 for g in DATASETS[d]:  # for every group of variables
                     for v in g:  # for every variable in the group
+                        if v == 'reverse':
+                            continue
                         # some bools to make this easier:
                         reverse = True if 'reverse' in g.keys() and g['reverse'] is True \
                             else False
@@ -81,21 +84,23 @@ def read_data(verbose=False, raw_epoch=True):
                         # read data and append to right place in the right way
                         if v == 'epoch' and raw_epoch is True:
                             event_data[g[v]].append(cdf.raw_var(g[v])[...])
-                        elif reverse and energy_var:
-                            vardat = cdf[g[v]][:, :, ::-1]
-                            vardat[vardat < 0] = numpy.nan
-                            # figure out what nan(s) we have:
-                            nonnan = numpy.any(~numpy.isnan(vardat), axis=(0, 1))
-                            event_data[g[v]].append(vardat[:, :, nonnan])
                         elif energy_var:
-                            # need to trunc off fill on either/both ends:
-                            vardat = cdf[g[v]][...]
-                            vardat[vardat < 0] = numpy.nan
+                            varcopy = spacepy.pycdf.VarCopy(cdf[g[v]])
+                            # fill nan(s):
+                            spacepy.pycdf.istp.nanfill(varcopy)
+                            vardat = varcopy[...]
+                            # reverse if necessary:
+                            if reverse:
+                                vardat = vardat[:, :, ::-1]
                             # figure out what nan(s) we have:
                             nonnan = numpy.any(~numpy.isnan(vardat), axis=(0, 1))
                             event_data[g[v]].append(vardat[:, :, nonnan])
                         else:
-                            event_data[g[v]].append(cdf[g[v]][...])
+                            varcopy = spacepy.pycdf.VarCopy(cdf[g[v]])
+                            # fill nan(s):
+                            spacepy.pycdf.istp.nanfill(varcopy)
+                            vardat = varcopy[...]
+                            event_data[g[v]].append(vardat)
 
             for v in event_data:
                 event_outdata[d][v] = numpy.concatenate(event_data[v])
@@ -117,3 +122,7 @@ def floor_datetime(date, delta=datetime.timedelta(days=1)):
 
 def ceil_datetime(date, delta=datetime.timedelta(days=1)):
     return date + (datetime.datetime.min - date) % delta
+
+def model(e, j_0, k):
+    """ Fisk & Gloeckler 2008 Eq. 38 changed a bit. """
+    return j_0 * e**k
