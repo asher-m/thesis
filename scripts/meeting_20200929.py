@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import matplotlib
+matplotlib.use('Agg')
 import matplotlib.cm
 import matplotlib.colors
 import matplotlib.pyplot as plt
@@ -50,7 +51,7 @@ def rebin(epoch, flux, pa, sa, cadence=None):
     return epoch_fake, flux_omni, flux_pa, flux_sa
 
 
-def spectrogram(epoch, flux_omni, flux_pa, flux_sa, energy, pname):
+def spectrogram(epoch, flux_omni, flux_pa, flux_sa, energy, pname, keepfig=False):
     """ Make a sprectrogram for one event.
 
     flux_pa and flux_sa are dicts keyed by 'par', 'apar', 'perp'. """
@@ -58,7 +59,7 @@ def spectrogram(epoch, flux_omni, flux_pa, flux_sa, energy, pname):
     cmap = matplotlib.cm.get_cmap('jet')
     cmap.set_bad(color='black')
     # log norm
-    norm = matplotlib.colors.LogNorm()
+    norm = matplotlib.colors.LogNorm(vmin=1e-4, vmax=1e6)
 
     fig, axes = plt.subplots(nrows=3, ncols=3,
                              figsize=(20, 20),
@@ -81,7 +82,7 @@ def spectrogram(epoch, flux_omni, flux_pa, flux_sa, energy, pname):
     ax.pcolormesh(
         epoch,
         energy[0, 0],
-        flux_omni.T,
+        numpy.ma.array(flux_omni, mask=numpy.isnan(flux_omni)).T,
         cmap=cmap,
         norm=norm,
         shading='flat',
@@ -95,7 +96,7 @@ def spectrogram(epoch, flux_omni, flux_pa, flux_sa, energy, pname):
         ax.pcolormesh(
             epoch,
             energy[0, 0],
-            flux_pa[k].T,
+            numpy.ma.array(flux_pa[k], mask=numpy.isnan(flux_pa[k])).T,
             cmap=cmap,
             norm=norm,
             shading='flat',
@@ -109,7 +110,7 @@ def spectrogram(epoch, flux_omni, flux_pa, flux_sa, energy, pname):
         ax.pcolormesh(
             epoch,
             energy[0, 0],
-            flux_sa[k].T,
+            numpy.ma.array(flux_sa[k], mask=numpy.isnan(flux_sa[k])).T,
             cmap=cmap,
             norm=norm,
             shading='flat',
@@ -121,7 +122,11 @@ def spectrogram(epoch, flux_omni, flux_pa, flux_sa, energy, pname):
     fig.tight_layout()
     fig.savefig(pname)
 
-    return fig
+    if keepfig is not False:
+        return fig, axes
+    else:
+        plt.close(fig)
+
 
 def main():
     eventdata = data.read_data(verbose=True)
@@ -153,9 +158,15 @@ def main():
                     flux_pa,
                     flux_sa, 
                     energy, 
-                    'meeting_20200929/spectrogram_event-{}_{}.pdf'.format(i, g['flux'].lower())
+                    'meeting_20200929/spectrogram_event-{:02d}_{}_{}.png'.format(
+                        i,
+                        spacepy.pycdf.lib.tt2000_to_datetime(epoch[0]).strftime('%Y-%j'),
+                        g['flux'].lower())
                 )
 
 
+    return eventdata
+
+
 if __name__ == '__main__':
-    main()
+    eventdata = main()
