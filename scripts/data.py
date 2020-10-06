@@ -8,6 +8,7 @@ Data interface for the thesis. All data i/o should happen here.
 import datetime
 import glob
 import numpy
+import os
 import pickle
 import platform
 import sys
@@ -52,8 +53,8 @@ def read_data(verbose=True, raw_epoch=True, use_recent=True):
         if len(files) > 0:
             now = datetime.datetime.now()
             most_recent = datetime.datetime.strptime(
-                files[-1],
-                '../data/eventdata_%Y%m%d.pickle{}'.format(sys.version_info[0])
+                os.path.basename(files[-1]),
+                'eventdata_%Y%m%d.pickle{}'.format(sys.version_info[0])
             )
             if now - most_recent < datetime.timedelta(weeks=1):
                 with open(files[-1], 'rb') as fp:
