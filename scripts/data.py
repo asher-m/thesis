@@ -22,9 +22,7 @@ import spacepy.pycdf.istp
 if platform.system() == 'Linux':  # probably, hopefully running on isoc
     import isois
 
-EVENTS_FILE = \
-    '../data/flux_event_times_cons.pickle{}'.format(sys.version_info[0])
-MAG_FILE = '../data/B.pickle{}'.format(sys.version_info[0])
+EVENTS_FILE = '../data/eventtimes.pickle{}'.format(sys.version_info[0])
 DATASETS = {
     'psp_isois-epilo_l2-ic': [
         {
