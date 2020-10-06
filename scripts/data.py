@@ -59,7 +59,7 @@ def read_data(verbose=True, raw_epoch=True, use_recent=True):
         if len(files) > 0:
             now = datetime.datetime.now()
             m = re.match(r'^eventdata_(\d{8}).*', os.path.basename(files[-1]))
-            most_recent = datetime.datetime.strptime(m[1], '%Y%m%d')
+            most_recent = datetime.datetime.strptime(m.group(1), '%Y%m%d')
             if now - most_recent < datetime.timedelta(weeks=1):
                 if verbose is True:
                     print('Found cached data from file {}, '
