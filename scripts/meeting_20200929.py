@@ -82,7 +82,7 @@ def rebin(epoch, flux, pa, sa, cadence=None, flux_unc=None):
         }
         return epoch_fake, flux_omni, flux_pa, flux_sa, flux_unc_omni, flux_unc_pa, flux_unc_sa
     else:
-    return epoch_fake, flux_omni, flux_pa, flux_sa
+        return epoch_fake, flux_omni, flux_pa, flux_sa
 
 
 def spectrogram(epoch, flux_omni, flux_pa, flux_sa, energy, pname, keepfig=False):
