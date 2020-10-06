@@ -48,6 +48,10 @@ DATASETS = {
 
 def read_data(verbose=True, raw_epoch=True, use_recent=True):
     """ Function to read event data from CDFs (without concat). """
+    if platform.system() != 'Linux' and use_recent is not True:
+        raise OSError('Received request to remake eventdata cache but '
+                      'cannot use isois library on non-Linux systems!')
+
     if use_recent is True:
         files = sorted(glob.glob('../data/eventdata_*.pickle{}'.format(sys.version_info[0])))  # nopep8
         if len(files) > 0:
