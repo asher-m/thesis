@@ -309,7 +309,7 @@ def main():
                     flux,
                     pa,
                     sa,
-                    cadence=60 * 1e9  # 1 hour in nanoseconds
+                    cadence=60 * 60 * 1e9  # 1 hour in nanoseconds
                 )
 
                 spectrogram(
