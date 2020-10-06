@@ -134,6 +134,7 @@ def read_data(verbose=True, raw_epoch=True, use_recent=True):
         outdata.append(event_outdata)
 
     # Save for faster access:
+    print('Working on writing data to cache and bz2 compression...')
     with bz2.BZ2File('../data/eventdata_{}.pickle{}.bz2'.format(datetime.datetime.now().strftime('%Y%m%d'),
                                                                 sys.version_info[0]),
                      'wb',
