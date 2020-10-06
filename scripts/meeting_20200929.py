@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Don't mess with my imports:
+import copy  # nopep8
 import matplotlib  # nopep8
 matplotlib.use('Agg')  # nopep8
 import matplotlib.cm  # nopep8
@@ -90,7 +91,7 @@ def spectrogram(epoch, flux_omni, flux_pa, flux_sa, energy, pname, keepfig=False
 
     flux_pa and flux_sa are dicts keyed by 'par', 'apar', 'perp'. """
     # color map
-    cmap = matplotlib.cm.get_cmap('jet')
+    cmap = copy.copy(matplotlib.cm.get_cmap('jet'))
     cmap.set_bad(color='black')
     # log norm
     norm = matplotlib.colors.LogNorm(vmin=FLUX_LIMLOW, vmax=FLUX_LIMHIGH)
@@ -119,8 +120,7 @@ def spectrogram(epoch, flux_omni, flux_pa, flux_sa, energy, pname, keepfig=False
         numpy.ma.array(flux_omni, mask=numpy.isnan(flux_omni)).T,
         cmap=cmap,
         norm=norm,
-        shading='flat',
-        edgecolors='None',
+        shading='auto',
         rasterized=True
     )
 
@@ -133,8 +133,7 @@ def spectrogram(epoch, flux_omni, flux_pa, flux_sa, energy, pname, keepfig=False
             numpy.ma.array(flux_pa[k], mask=numpy.isnan(flux_pa[k])).T,
             cmap=cmap,
             norm=norm,
-            shading='flat',
-            edgecolors='None',
+            shading='auto',
             rasterized=True
         )
 
@@ -147,8 +146,7 @@ def spectrogram(epoch, flux_omni, flux_pa, flux_sa, energy, pname, keepfig=False
             numpy.ma.array(flux_sa[k], mask=numpy.isnan(flux_sa[k])).T,
             cmap=cmap,
             norm=norm,
-            shading='flat',
-            edgecolors='None',
+            shading='auto',
             rasterized=True
         )
 
