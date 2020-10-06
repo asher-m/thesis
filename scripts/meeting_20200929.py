@@ -170,7 +170,8 @@ def spectrum(epoch, flux_omni, flux_unc_omni, flux_pa, flux_unc_pa, flux_sa, flu
         ax.set_ylim(FLUX_LIMLOW, FLUX_LIMHIGH)
         ax.set_xscale('log')
         ax.set_xlabel('Energy (keV)')
-        ax.set_xlim(20, 200)
+        ax.set_xlim(20, 400)  # 400 here doesn't make any sesne but matplotlib seems to do what it wants
+        ax.legend()
 
     energy_bounds = ((37, 160), (95, 160))
 
@@ -183,68 +184,99 @@ def spectrum(epoch, flux_omni, flux_unc_omni, flux_pa, flux_unc_pa, flux_sa, flu
 
     erange = numpy.linspace(energy[0, 0, 0], energy[0, 0, -1])
 
-    # Sharing x and y, so set them smartly:
-    label_axis(axes[0, 0])
-
     for j, eset in enumerate(energy_bounds):
         elower = numpy.searchsorted(energy[0, 0], eset[0])
         eupper = numpy.searchsorted(energy[0, 0], eset[1])
 
         # First plot omni:
         ax = axes[0, 1]
-        popt, pcov = scipy.optimize.curve_fit(
-            data.model,
-            energy[0, 0, elower:eupper],
-            flux_omni[0, elower:eupper],
-            sigma=flux_unc_omni[0, elower:eupper],
-            absolute_sigma=True,
-            p0=P0
-        )
-        ax.plot(erange, data.model(erange, *popt))
+        # Flux data:
         if j == 0:  # if first time around do the plot:
             ax.errorbar(
                 energy[0, 0],
                 flux_omni[0],
-                yerr=flux_unc_omni[0]
+                yerr=flux_unc_omni[0],
+                label='omni flux'
             )
+        # Flux fits:
+        try:
+            popt, pcov = scipy.optimize.curve_fit(
+                data.model,
+                energy[0, 0, elower:eupper],
+                flux_omni[0, elower:eupper],
+                sigma=flux_unc_omni[0, elower:eupper],
+                absolute_sigma=True,
+                p0=P0
+            )
+            ax.plot(
+                erange,
+                data.model(erange, *popt),
+                label='omni fit {:3} to {:3} keV: coeff {:5f}'.format(eset[0], eset[1], popt[-1])
+            )
+        except:
+            pass
 
         # Now plot pa:
         for i, k in enumerate(('par', 'perp', 'apar')):
             ax = axes[1, i]
-            popt, pcov = scipy.optimize.curve_fit(
-                data.model,
-                energy[0, 0, elower:eupper],
-                flux_pa[k][0, elower:eupper],
-                sigma=flux_unc_pa[k][0, elower:eupper],
-                absolute_sigma=True,
-                p0=P0
-            )
-            ax.plot(erange, data.model(erange, *popt))
+            # Flux data:
             if j == 0:
                 ax.errorbar(
                     energy[0, 0],
                     flux_pa[k][0],
-                    yerr=flux_unc_pa[k][0]
+                    yerr=flux_unc_pa[k][0],
+                    label='pa {} flux'.format(k)
                 )
+            # Flux fits:
+            try:
+                popt, pcov = scipy.optimize.curve_fit(
+                    data.model,
+                    energy[0, 0, elower:eupper],
+                    flux_pa[k][0, elower:eupper],
+                    sigma=flux_unc_pa[k][0, elower:eupper],
+                    absolute_sigma=True,
+                    p0=P0
+                )
+                ax.plot(erange,
+                    data.model(erange, *popt),
+                    label='pa {} fit {:3} to {:3} keV: coeff {:5f}'.format(k, eset[0], eset[1], popt[-1])
+                )
+            except:
+                pass
 
         # Now plot sa:
         for i, k in enumerate(('par', 'perp', 'apar')):
             ax = axes[2, i]
-            popt, pcov = scipy.optimize.curve_fit(
-                data.model,
-                energy[0, 0, elower:eupper],
-                flux_sa[k][0, elower:eupper],
-                sigma=flux_unc_sa[k][0, elower:eupper],
-                absolute_sigma=True,
-                p0=P0
-            )
-            ax.plot(erange, data.model(erange, *popt))
+            # Flux data:
             if j == 0:
                 ax.errorbar(
                     energy[0, 0],
                     flux_sa[k][0],
-                    yerr=flux_unc_sa[k][0]
+                    yerr=flux_unc_sa[k][0],
+                    label='sa {} flux'.format(k)
                 )
+            # Flux fits:
+            try:
+                popt, pcov = scipy.optimize.curve_fit(
+                    data.model,
+                    energy[0, 0, elower:eupper],
+                    flux_sa[k][0, elower:eupper],
+                    sigma=flux_unc_sa[k][0, elower:eupper],
+                    absolute_sigma=True,
+                    p0=P0
+                )
+                ax.plot(
+                    erange,
+                    data.model(erange, *popt),
+                    label='sa {} fit {:3} to {:3} keV: coeff {:5f}'.format(k, eset[0], eset[1], popt[-1])
+                )
+            except:
+                pass
+
+    # Sharing x and y, so set them smartly:
+    for i in range(axes.shape[0]):
+        for j in range(axes.shape[1]):
+            label_axis(axes[i, j])
 
     # Save:
     fig.tight_layout()
@@ -271,6 +303,26 @@ def main():
                 # Check if we can actually handle this event:
                 if not len(epoch) > 1:
                     continue
+
+                epoch_fake, flux_omni, flux_pa, flux_sa = rebin(
+                    epoch,
+                    flux,
+                    pa,
+                    sa,
+                    cadence=60 * 1e9  # 1 hour in nanoseconds
+                )
+
+                spectrogram(
+                    epoch_fake,
+                    flux_omni,
+                    flux_pa,
+                    flux_sa,
+                    energy,
+                    'meeting_20200929/spectrogram_event-{:02d}_{}_{}.png'.format(
+                        i,
+                        spacepy.pycdf.lib.tt2000_to_datetime(epoch[0]).strftime('%Y-%j'),  # nopep8
+                        g['flux'].lower())
+                )
 
                 epoch_fake, flux_omni, flux_pa, flux_sa, flux_unc_omni, flux_unc_pa, flux_unc_sa = rebin(
                     epoch,
