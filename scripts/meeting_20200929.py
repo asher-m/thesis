@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.cm
-import matplotlib.colors
-import matplotlib.pyplot as plt
-import matplotlib.pyplot as plt
-import numpy
-import scipy.optimize
-
-import spacepy
-import spacepy.pycdf
-import spacepy.datamanager
-
-import data
+# Don't mess with my imports:
+import matplotlib  # nopep8
+matplotlib.use('Agg')  # nopep8
+import matplotlib.cm  # nopep8
+import matplotlib.colors  # nopep8
+import matplotlib.pyplot as plt  # nopep8
+import matplotlib.pyplot as plt  # nopep8
+import numpy  # nopep8
+import scipy.optimize  # nopep8
+# nopep8
+import spacepy  # nopep8
+import spacepy.pycdf  # nopep8
+import spacepy.datamanager  # nopep8
+# nopep8
+import data  # nopep8
 
 
 FLUX_LIMLOW, FLUX_LIMHIGH = 1e-3, 1e4
@@ -22,7 +22,7 @@ P0 = numpy.array([1e10, -3/2])
 
 def rebin(epoch, flux, pa, sa, cadence=None, flux_unc=None):
     """ Rebin fluxes. 
-    
+
     Cadence in nanoseconds; default None averages entire range. """
     # Look dir:
     flux_omni = spacepy.datamanager.rebin(flux, sa, [0, 180], axis=1)
@@ -192,10 +192,6 @@ def spectrum(epoch, flux_omni, flux_unc_omni, flux_pa, flux_unc_pa, flux_sa, flu
         elower = numpy.searchsorted(energy[0, 0], eset[0])
         eupper = numpy.searchsorted(energy[0, 0], eset[1])
 
-        print(j, ';', eset, ':', elower, eupper)
-        # import pdb; pdb.set_trace()
-
-
         # First plot omni:
         ax = axes[0, 1]
         popt, pcov = scipy.optimize.curve_fit(
@@ -213,7 +209,6 @@ def spectrum(epoch, flux_omni, flux_unc_omni, flux_pa, flux_unc_pa, flux_sa, flu
                 flux_omni[0],
                 yerr=flux_unc_omni[0]
             )
-        print(j, ';', eset, ':', *popt)
 
         # Now plot pa:
         for i, k in enumerate(('par', 'perp', 'apar')):
@@ -279,7 +274,6 @@ def main():
                 if not len(epoch) > 1:
                     continue
 
-
                 epoch_fake, flux_omni, flux_pa, flux_sa, flux_unc_omni, flux_unc_pa, flux_unc_sa = rebin(
                     epoch,
                     flux,
@@ -287,19 +281,19 @@ def main():
                     sa,
                     flux_unc=flux_unc
                 )
-            
+
                 spectrum(
                     epoch_fake,
                     flux_omni,
                     flux_unc_omni,
                     flux_pa,
                     flux_unc_pa,
-                    flux_sa, 
+                    flux_sa,
                     flux_unc_sa,
-                    energy, 
+                    energy,
                     'meeting_20200929/spectrum_event-{:02d}_{}_{}.png'.format(
                         i,
-                        spacepy.pycdf.lib.tt2000_to_datetime(epoch[0]).strftime('%Y-%j'),
+                        spacepy.pycdf.lib.tt2000_to_datetime(epoch[0]).strftime('%Y-%j'),  # nopep8
                         g['flux'].lower())
                 )
 

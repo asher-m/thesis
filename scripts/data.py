@@ -155,6 +155,7 @@ def floor_datetime(date, delta=datetime.timedelta(days=1)):
 def ceil_datetime(date, delta=datetime.timedelta(days=1)):
     return date + (datetime.datetime.min - date) % delta
 
+
 def model(e, j_0, k):
     """ Fisk & Gloeckler 2008 Eq. 38 changed a bit. """
     return j_0 * e**k
