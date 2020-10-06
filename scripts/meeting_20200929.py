@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # Don't mess with my imports:
+from collections.abc import Iterable  # nopep8
 import copy  # nopep8
 import matplotlib  # nopep8
 matplotlib.use('Agg')  # nopep8
@@ -160,7 +161,11 @@ def spectrogram(epoch, flux_omni, flux_pa, flux_sa, energy, pname, keepfig=False
 
     # Save:
     fig.tight_layout()
-    fig.savefig(pname)
+    if isinstance(pname, Iterable):
+        for p in pname:
+            fig.savefig(p)
+    else:
+        fig.savefig(pname)
 
     if keepfig is not False:
         return fig, axes
@@ -288,7 +293,11 @@ def spectrum(epoch, flux_omni, flux_unc_omni, flux_pa, flux_unc_pa, flux_sa, flu
 
     # Save:
     fig.tight_layout()
-    fig.savefig(pname)
+    if isinstance(pname, Iterable):
+        for p in pname:
+            fig.savefig(p)
+    else:
+        fig.savefig(pname)
 
     if keepfig is not False:
         return fig, axes
@@ -326,10 +335,14 @@ def main():
                     flux_pa,
                     flux_sa,
                     energy,
-                    'meeting_20200929/spectrogram_event-{:02d}_{}_{}.png'.format(
-                        i,
-                        spacepy.pycdf.lib.tt2000_to_datetime(epoch[0]).strftime('%Y-%j'),  # nopep8
-                        g['flux'].lower())
+                    ('meeting_20200929/spectrogram_event-{:02d}_{}_{}.png'.format(
+                         i,
+                         spacepy.pycdf.lib.tt2000_to_datetime(epoch[0]).strftime('%Y-%j'),  # nopep8
+                         g['flux'].lower()),
+                     'meeting_20200929/spectrogram_event-{:02d}_{}_{}.pdf'.format(
+                         i,
+                         spacepy.pycdf.lib.tt2000_to_datetime(epoch[0]).strftime('%Y-%j'),  # nopep8
+                         g['flux'].lower()))
                 )
 
                 epoch_fake, flux_omni, flux_pa, flux_sa, flux_unc_omni, flux_unc_pa, flux_unc_sa = rebin(
@@ -349,10 +362,14 @@ def main():
                     flux_sa,
                     flux_unc_sa,
                     energy,
-                    'meeting_20200929/spectrum_event-{:02d}_{}_{}.png'.format(
-                        i,
-                        spacepy.pycdf.lib.tt2000_to_datetime(epoch[0]).strftime('%Y-%j'),  # nopep8
-                        g['flux'].lower())
+                    ('meeting_20200929/spectrum_event-{:02d}_{}_{}.png'.format(
+                         i,
+                         spacepy.pycdf.lib.tt2000_to_datetime(epoch[0]).strftime('%Y-%j'),  # nopep8
+                         g['flux'].lower()),
+                     'meeting_20200929/spectrum_event-{:02d}_{}_{}.pdf'.format(
+                         i,
+                         spacepy.pycdf.lib.tt2000_to_datetime(epoch[0]).strftime('%Y-%j'),  # nopep8
+                         g['flux'].lower()))
                 )
 
     return eventdata
