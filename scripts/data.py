@@ -5,12 +5,14 @@ Data interface for the thesis. All data i/o should happen here.
 """
 
 
+import bz2
 import datetime
 import glob
 import numpy
 import os
 import pickle
 import platform
+import re
 import sys
 
 import spacepy
@@ -53,19 +55,17 @@ def read_data(verbose=True, raw_epoch=True, use_recent=True):
                       'cannot use isois library on non-Linux systems!')
 
     if use_recent is True:
-        files = sorted(glob.glob('../data/eventdata_*.pickle{}'.format(sys.version_info[0])))  # nopep8
+        files = sorted(glob.glob('../data/eventdata_*.pickle{}.bz2'.format(sys.version_info[0])))  # nopep8
         if len(files) > 0:
             now = datetime.datetime.now()
-            most_recent = datetime.datetime.strptime(
-                os.path.basename(files[-1]),
-                'eventdata_%Y%m%d.pickle{}'.format(sys.version_info[0])
-            )
+            m = re.match(r'^eventdata_(\d{8}).*', os.path.basename(files[-1]))
+            most_recent = datetime.datetime.strptime(m[1], '%Y%m%d')
             if now - most_recent < datetime.timedelta(weeks=1):
-                with open(files[-1], 'rb') as fp:
-                    outdata = pickle.load(fp)
                 if verbose is True:
-                    print('Found cached file from {}, '
-                          'returning contents...'.format(most_recent.strftime('%Y%m%d')))
+                    print('Found cached data from file {}, '
+                          'using contents...'.format(os.path.basename(files[-1])))
+                with bz2.BZ2File(files[-1], 'rb') as fp:
+                    outdata = pickle.load(fp)
                 # Able to read, so return
                 return outdata
 
@@ -134,9 +134,10 @@ def read_data(verbose=True, raw_epoch=True, use_recent=True):
         outdata.append(event_outdata)
 
     # Save for faster access:
-    with open('../data/eventdata_{}.pickle{}'.format(datetime.datetime.now().strftime('%Y%m%d'),
-                                                     sys.version_info[0]),
-              'wb') as fp:
+    with bz2.BZ2File('../data/eventdata_{}.pickle{}.bz2'.format(datetime.datetime.now().strftime('%Y%m%d'),
+                                                                sys.version_info[0]),
+                     'wb',
+                     compresslevel=1) as fp:
         pickle.dump(outdata, fp)
 
     return outdata
