@@ -6,15 +6,18 @@ Data interface for the thesis. All data i/o should happen here.
 
 
 import datetime
+import glob
 import numpy
 import pickle
+import platform
 import sys
 
-import isois
 import spacepy
 import spacepy.pycdf
 import spacepy.pycdf.istp
 
+if platform.system() == 'Linux':  # probably, hopefully running on isoc
+    import isois
 
 EVENTS_FILE = \
     '../data/flux_event_times_cons.pickle{}'.format(sys.version_info[0])
@@ -42,8 +45,26 @@ DATASETS = {
 }
 
 
-def read_data(verbose=True, raw_epoch=True):
+def read_data(verbose=True, raw_epoch=True, use_recent=True):
     """ Function to read event data from CDFs (without concat). """
+    if use_recent is True:
+        files = sorted(glob.glob('../data/eventdata_*.pickle{}'.format(sys.version_info[0])))  # nopep8
+        if len(files) > 0:
+            now = datetime.datetime.now()
+            most_recent = datetime.datetime.strptime(
+                files[-1],
+                '../data/eventdata_%Y%m%d.pickle{}'.format(sys.version_info[0])
+            )
+            if now - most_recent < datetime.timedelta(weeks=1):
+                with open(files[-1], 'rb') as fp:
+                    outdata = pickle.load(fp)
+                if verbose is True:
+                    print('Found cached file from {}, '
+                          'returning contents...'.format(most_recent.strftime('%Y%m%d')))
+                # Able to read, so return
+                return outdata
+
+    # If not, do the regular:
     outdata = []
 
     events = read_events()
@@ -93,7 +114,7 @@ def read_data(verbose=True, raw_epoch=True):
                             if reverse:
                                 vardat = vardat[:, :, ::-1]
                             # figure out what nan(s) we have:
-                            nonnan = numpy.any(~numpy.isnan(vardat), axis=(0, 1))
+                            nonnan = numpy.any(~numpy.isnan(vardat), axis=(0, 1))  # nopep8
                             event_data[g[v]].append(vardat[:, :, nonnan])
                         else:
                             varcopy = spacepy.pycdf.VarCopy(cdf[g[v]])
@@ -106,6 +127,12 @@ def read_data(verbose=True, raw_epoch=True):
                 event_outdata[d][v] = numpy.concatenate(event_data[v])
 
         outdata.append(event_outdata)
+
+    # Save for faster access:
+    with open('../data/eventdata_{}.pickle{}'.format(datetime.datetime.now().strftime('%Y%m%d'),
+                                                     sys.version_info[0]),
+              'wb') as fp:
+        pickle.dump(outdata, fp)
 
     return outdata
 
