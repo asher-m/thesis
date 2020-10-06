@@ -22,7 +22,7 @@ import spacepy.pycdf.istp
 if platform.system() == 'Linux':  # probably, hopefully running on isoc
     import isois
 
-EVENTS_FILE = '../data/eventtimes.pickle{}'.format(sys.version_info[0])
+EVENTS_FILE = '../data/eventtimes{}.pickle{}'
 DATASETS = {
     'psp_isois-epilo_l2-ic': [
         {
@@ -46,14 +46,12 @@ DATASETS = {
 }
 
 
-def read_data(verbose=True, raw_epoch=True, use_recent=True):
+def read_data(verbose=True, raw_epoch=True, use_cache=True, globstr=''):
     """ Function to read event data from CDFs (without concat). """
-    if platform.system() != 'Linux' and use_recent is not True:
-        raise OSError('Received request to remake eventdata cache but '
-                      'cannot use isois library on non-Linux systems!')
-
-    if use_recent is True:
-        files = sorted(glob.glob('../data/eventdata_*.pickle{}.bz2'.format(sys.version_info[0])))  # nopep8
+    if use_cache is True:
+        files = sorted(glob.glob('../data/eventdata_[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' \
+                                 + (('_' + globstr) if len(globstr) > 0 else ('')) \
+                                 + '.pickle{}.bz2'.format(sys.version_info[0])))  # nopep8
         if len(files) > 0:
             now = datetime.datetime.now()
             m = re.match(r'^eventdata_(\d{8}).*', os.path.basename(files[-1]))
@@ -67,10 +65,15 @@ def read_data(verbose=True, raw_epoch=True, use_recent=True):
                 # Able to read, so return
                 return outdata
 
+    if platform.system() != 'Linux':
+        raise OSError('Received request to remake eventdata cache or failed to find cache '
+                      'and resorting to rebuilding but '
+                      'cannot use isois library on non-Linux systems!')
+
     # If not, do the regular:
     outdata = []
 
-    events = read_events()
+    events = read_events(globstr)
 
     for i, e in enumerate(events):
         strtday = floor_datetime(e[0])
@@ -133,8 +136,9 @@ def read_data(verbose=True, raw_epoch=True, use_recent=True):
 
     # Save for faster access:
     print('Working on writing data to cache and bz2 compression...')
-    with bz2.BZ2File('../data/eventdata_{}.pickle{}.bz2'.format(datetime.datetime.now().strftime('%Y%m%d'),
-                                                                sys.version_info[0]),
+    with bz2.BZ2File('../data/eventdata_{}{}.pickle{}.bz2'.format(datetime.datetime.now().strftime('%Y%m%d'),
+                                                                  (('_' + globstr) if len(globstr) > 0 else ('')),
+                                                                  sys.version_info[0]),
                      'wb',
                      compresslevel=1) as fp:
         pickle.dump(outdata, fp)
@@ -142,8 +146,9 @@ def read_data(verbose=True, raw_epoch=True, use_recent=True):
     return outdata
 
 
-def read_events():
-    with open(EVENTS_FILE, 'rb') as fp:
+def read_events(globstr=''):
+    with open(EVENTS_FILE.format((('_' + globstr) if len(globstr) > 0 else ('')),
+                                 sys.version_info[0]), 'rb') as fp:
         # event datetimes are only in last column
         return pickle.load(fp)[..., 0]
 

@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt  # nopep8
 import matplotlib.pyplot as plt  # nopep8
 import numpy  # nopep8
 import scipy.optimize  # nopep8
+import sys  # nopep8
 # nopep8
 import spacepy  # nopep8
 import spacepy.pycdf  # nopep8
@@ -296,7 +297,7 @@ def spectrum(epoch, flux_omni, flux_unc_omni, flux_pa, flux_unc_pa, flux_sa, flu
 
 
 def main():
-    eventdata = data.read_data(verbose=True)
+    eventdata = data.read_data(verbose=True, globstr=sys.argv[1] if len(sys.argv) > 1 else '')
     for i, e in enumerate(eventdata):
         for d in data.DATASETS:
             for g in data.DATASETS[d]:
