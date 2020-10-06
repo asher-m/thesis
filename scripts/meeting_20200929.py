@@ -91,7 +91,7 @@ def spectrogram(epoch, flux_omni, flux_pa, flux_sa, energy, pname, keepfig=False
     )
 
     # Now plot pa:
-    for i, k in enumerate(flux_pa):
+    for i, k in enumerate(('par', 'perp', 'apar')):
         ax = axes[1, i]
         ax.pcolormesh(
             epoch,
@@ -105,7 +105,7 @@ def spectrogram(epoch, flux_omni, flux_pa, flux_sa, energy, pname, keepfig=False
         )
 
     # Now plot sa:
-    for i, k in enumerate(flux_sa):
+    for i, k in enumerate(('par', 'perp', 'apar')):
         ax = axes[2, i]
         ax.pcolormesh(
             epoch,
