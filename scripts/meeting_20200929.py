@@ -17,7 +17,7 @@ import spacepy.datamanager  # nopep8
 import data  # nopep8
 
 
-FLUX_LIMLOW, FLUX_LIMHIGH = 1e-3, 1e4
+FLUX_LIMLOW, FLUX_LIMHIGH = 1e-4, 1e4
 P0 = numpy.array([1e10, -3/2])
 
 
@@ -93,6 +93,13 @@ def spectrogram(epoch, flux_omni, flux_pa, flux_sa, energy, pname, keepfig=False
     # color map
     cmap = copy.copy(matplotlib.cm.get_cmap('jet'))
     cmap.set_bad(color='black')
+    cmap.set_under(color='#1a1a1a')
+    # Adjust 0 values to show as under color instead of bad:
+    flux_omni[flux_omni == 0] = 1e-30
+    for s in ('par', 'apar', 'perp'):
+        flux_pa[s][flux_pa[s] == 0] = 1e-30
+        flux_sa[s][flux_sa[s] == 0] = 1e-30
+
     # log norm
     norm = matplotlib.colors.LogNorm(vmin=FLUX_LIMLOW, vmax=FLUX_LIMHIGH)
 
