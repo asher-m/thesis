@@ -94,7 +94,7 @@ def spectrogram(epoch, flux_omni, flux_pa, flux_sa, energy, pname, keepfig=False
     # color map
     cmap = copy.copy(matplotlib.cm.get_cmap('jet'))
     cmap.set_bad(color='black')
-    cmap.set_under(color='#1a1a1a')
+    cmap.set_under(color='#004506')
     # Adjust 0 values to show as under color instead of bad:
     flux_omni[flux_omni == 0] = 1e-30
     for s in ('par', 'apar', 'perp'):
