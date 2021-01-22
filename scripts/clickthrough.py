@@ -61,6 +61,8 @@ def edges(datestr, epoch=False):
 
     # Energy bins:
     ebins, epmvals = isois.level3_master.master_isois_3_summary_energy_bins()
+    ebins *= 1e3
+    epmvals *= 1e3
     edges_energy = numpy.array(
         list((ebins[0] - epmvals[0, 0],)) + list(ebins + epmvals[:, 1]))
 
@@ -87,8 +89,12 @@ def read_data():
     for v in ('ChanT', 'ChanP', 'ChanR'):
         # just create holding places
         outdata[v] = dict()
-        outdata[v]['flux'] = list()
-        outdata[v]['epoch'] = list()
+        outdata[v]['flux'] = numpy.empty((24 * len(files), 32), dtype=numpy.float32)
+        outdata[v]['flux'].fill(numpy.nan)
+        outdata[v]['epoch'] = numpy.empty((24 * len(files)), dtype=numpy.int64)
+        outdata[v]['epoch'].fill(-1)
+
+    j = 0
 
     for f in files:
         print('Starting file {}...'.format(os.path.basename(f)))
@@ -124,14 +130,14 @@ def read_data():
                 axis=0
             )
 
-            outdata[v]['flux'].extend(flux.tolist())
-            outdata[v]['epoch'].extend(edges(finfo['date'], epoch=True))
+            outdata[v]['flux'][j:j + 24] = numpy.squeeze(flux)
+            outdata[v]['epoch'][j:j + 24] = numpy.array(edges(finfo['date'], epoch=True))
 
-    # convert back to arrays
-    for v in ('ChanT', 'ChanP', 'ChanR'):
-        outdata[v]['flux'] = numpy.squeeze(numpy.array(outdata[v]['flux']))
-        outdata[v]['epoch'] = numpy.array(outdata[v]['epoch'])
+        j += 24
 
     with bz2.BZ2File('../data/clickdata.pickle{}.bz2'.format(sys.version_info[0]),
-                     'wb', compresslevel=1):
+                     'wb', compresslevel=1) as fp:
         pickle.dump(outdata, fp)
+
+if __name__ == '__main__':
+    read_data()
