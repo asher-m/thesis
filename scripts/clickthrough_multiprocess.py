@@ -22,7 +22,7 @@ if platform.system() == 'Linux':  # probably, hopefully running on isoc
 
 
 def process_file(f):
-    # print('Starting file {}...'.format(os.path.basename(f)))
+    print('Starting file {}...'.format(os.path.basename(f)))
     r = dict()
 
     finfo = isois.isois_cdf.cdf_filename_parser(f)
@@ -125,7 +125,8 @@ def edges(datestr, epoch=False):
 def read_data():
     # multiprocess stuff
     cpus = mp.cpu_count()
-    cpus_to_use = cpus - 4 if cpus - 4 > 0 else cpus
+    # cpus_to_use = cpus - 4 if cpus - 4 > 0 else cpus
+    cpus_to_use = 4
 
     # place to store outdata
     outdata = dict()
@@ -142,7 +143,8 @@ def read_data():
     # files = isois.get_latest('psp_isois-epilo_l2-ic')[:10] # just first 10
     # files = isois.get_latest('psp_isois-epilo_l2-ic')[:100]
 
-    filesets = [files[i*cpus_to_use:(i+1)*cpus_to_use] for i in range(int(len(files)//cpus_to_use+1))]
+    filesets = [files[i*cpus_to_use:(i+1)*cpus_to_use]
+                for i in range(int(len(files)//cpus_to_use+1))]
     print('Total filesets {}...'.format(len(filesets)))
 
     for v in ('ChanT', 'ChanP', 'ChanR'):
@@ -155,14 +157,16 @@ def read_data():
 
     with mp.Pool(cpus_to_use) as pool:
         for nn, fset in enumerate(filesets):
-            print('Starting fileset {}...'.format(nn))
+            print('Starting fileset {:>3d}...'.format(nn))
             data = pool.map(process_file, fset)
 
-            print('Adding fileset {} to outdata...'.format(nn))
+            print('Adding fileset {:>3d} to outdata...'.format(nn))
             for d in data:
                 for v in ('ChanT', 'ChanP', 'ChanR'):
-                    outdata[v]['flux'] = numpy.concatenate((outdata[v]['flux'], numpy.squeeze(d[v]['flux'])))
-                    outdata[v]['epoch'] = numpy.concatenate((outdata[v]['epoch'], d[v]['epoch']))
+                    outdata[v]['flux'] = numpy.concatenate(
+                        (outdata[v]['flux'], numpy.squeeze(d[v]['flux'])))
+                    outdata[v]['epoch'] = numpy.concatenate(
+                        (outdata[v]['epoch'], d[v]['epoch']))
 
     # for v in ('ChanT', 'ChanP', 'ChanR'):
     #     for j, d in enumerate(data):
@@ -176,6 +180,7 @@ def read_data():
         pickle.dump(outdata, fp)
 
     return outdata
+
 
 if __name__ == '__main__':
     read_data()
