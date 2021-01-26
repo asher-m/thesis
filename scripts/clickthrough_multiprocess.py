@@ -167,9 +167,13 @@ def read_data():
             outdata[v]['flux'] = numpy.concatenate(
                 (outdata[v]['flux'], numpy.squeeze(d[v]['flux'])))
 
+    srt_idx = numpy.argsort(outdata['epoch'])
+    outdata['epoch'] = outdata['epoch'][srt_idx]
+    for v in channels:
+        outdata[v]['flux'] = outdata[v]['flux'][srt_idx]
 
     print('Zipping...')
-    with bz2.BZ2File('../data/clickdata-multiprocess.pickle{}.bz2'.format(sys.version_info[0]),
+    with bz2.BZ2File('../data/clickdata.pickle{}.bz2'.format(sys.version_info[0]),
                      'wb', compresslevel=1) as fp:
         pickle.dump(outdata, fp)
 
