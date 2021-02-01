@@ -7,7 +7,9 @@ Data interface for the thesis. All data i/o should happen here.
 
 import bz2
 import datetime
+import functools
 import glob
+import multiprocessing
 import numpy
 import os
 import pickle
@@ -45,12 +47,62 @@ DATASETS = {
     ]
 }
 
+cpus_on_system = multiprocessing.cpu_count()
+cpus_to_use = cpus_on_system - 4 if cpus_on_system - 4 > 0 else cpus_on_system
+
+
+def _read_data_process(verbose, raw_epoch, d, strtday, i):
+    # verbose, raw_epoch, d, i, strtday = gargs  # unpack args; makes multiprocessing easier
+    file_data = dict()  # holding place for this file's data
+    f_today = isois.get_latest(
+        d, date=(strtday + i * datetime.timedelta(days=1)).strftime('%Y%m%d'))
+    # it's possible that we occasionally have no files for today
+    if len(f_today) > 0:
+        f = f_today[0]
+    else:
+        return
+    if verbose:
+        print('\t\tReading file {}...'.format(f))
+
+    cdf = spacepy.pycdf.CDF(f)
+    for g in DATASETS[d]:  # for every group of variables
+        for v in g:  # for every variable in the group
+            if v == 'reverse':
+                continue
+            # some bools to make this easier:
+            reverse = True if 'reverse' in g.keys() and g['reverse'] is True \
+                else False
+            energy_var = True if v == 'energy' or v == 'flux' or v == 'flux_unc' \
+                else False
+            # read data and append to right place in the right way
+            if v == 'epoch' and raw_epoch is True:
+                file_data[g[v]] = cdf.raw_var(g[v])[...]
+            elif energy_var:
+                varcopy = spacepy.pycdf.VarCopy(cdf[g[v]])
+                # fill nan(s):
+                spacepy.pycdf.istp.nanfill(varcopy)
+                vardat = varcopy[...]
+                # reverse if necessary:
+                if reverse:
+                    vardat = vardat[:, :, ::-1]
+                # figure out what nan(s) we have:
+                nonnan = numpy.any(~numpy.isnan(vardat), axis=(0, 1))  # nopep8
+                file_data[g[v]] = vardat[:, :, nonnan]
+            else:
+                varcopy = spacepy.pycdf.VarCopy(cdf[g[v]])
+                # fill nan(s):
+                spacepy.pycdf.istp.nanfill(varcopy)
+                vardat = varcopy[...]
+                file_data[g[v]] = vardat
+
+    return file_data
+
 
 def read_data(verbose=True, raw_epoch=True, use_cache=True, globstr=''):
     """ Function to read event data from CDFs (without concat). """
     if use_cache is True:
-        files = sorted(glob.glob('../data/eventdata_[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' \
-                                 + (('_' + globstr) if len(globstr) > 0 else ('')) \
+        files = sorted(glob.glob('../data/eventdata_[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'
+                                 + (('_' + globstr) if len(globstr) > 0 else (''))
                                  + '.pickle{}.bz2'.format(sys.version_info[0])))  # nopep8
         if len(files) > 0:
             now = datetime.datetime.now()
@@ -92,47 +144,26 @@ def read_data(verbose=True, raw_epoch=True, use_cache=True, globstr=''):
 
             event_data = {g[v]: [] for g in DATASETS[d]
                           for v in g if not v == 'reverse'}
-            for i in range((stopday - strtday).days):  # open file for everyday
-                f_today = isois.get_latest(
-                    d, date=(strtday + i * datetime.timedelta(days=1)).strftime('%Y%m%d'))
-                # it's possible that we occasionally have no files for today
-                if len(f_today) > 0:
-                    f = f_today[0]
-                else:
-                    continue
-                if verbose:
-                    print('\t\tReading file {}...'.format(f))
 
-                cdf = spacepy.pycdf.CDF(f)
-                for g in DATASETS[d]:  # for every group of variables
-                    for v in g:  # for every variable in the group
-                        if v == 'reverse':
-                            continue
-                        # some bools to make this easier:
-                        reverse = True if 'reverse' in g.keys() and g['reverse'] is True \
-                            else False
-                        energy_var = True if v == 'energy' or v == 'flux' or v == 'flux_unc' \
-                            else False
-                        # read data and append to right place in the right way
-                        if v == 'epoch' and raw_epoch is True:
-                            event_data[g[v]].append(cdf.raw_var(g[v])[...])
-                        elif energy_var:
-                            varcopy = spacepy.pycdf.VarCopy(cdf[g[v]])
-                            # fill nan(s):
-                            spacepy.pycdf.istp.nanfill(varcopy)
-                            vardat = varcopy[...]
-                            # reverse if necessary:
-                            if reverse:
-                                vardat = vardat[:, :, ::-1]
-                            # figure out what nan(s) we have:
-                            nonnan = numpy.any(~numpy.isnan(vardat), axis=(0, 1))  # nopep8
-                            event_data[g[v]].append(vardat[:, :, nonnan])
-                        else:
-                            varcopy = spacepy.pycdf.VarCopy(cdf[g[v]])
-                            # fill nan(s):
-                            spacepy.pycdf.istp.nanfill(varcopy)
-                            vardat = varcopy[...]
-                            event_data[g[v]].append(vardat)
+            _read_data_process_baked = functools.partial(
+                _read_data_process,
+                verbose,
+                raw_epoch,
+                d,
+                strtday
+            )
+
+            # Pool here
+            with multiprocessing.Pool(cpus_to_use) as pool:
+                file_data = pool.map(
+                    _read_data_process_baked,
+                    range((stopday - strtday).days)
+                )
+
+            # recombine data in list for concat
+            for p in file_data:
+                for v in p:
+                    event_data[v].append(p[v])
 
             try:
                 for v in event_data:
@@ -145,7 +176,8 @@ def read_data(verbose=True, raw_epoch=True, use_cache=True, globstr=''):
     # Save for faster access:
     print('Working on writing data to cache and bz2 compression...')
     with bz2.BZ2File('../data/eventdata_{}{}.pickle{}.bz2'.format(datetime.datetime.now().strftime('%Y%m%d'),
-                                                                  (('_' + globstr) if len(globstr) > 0 else ('')),
+                                                                  (('_' + globstr)
+                                                                   if len(globstr) > 0 else ('')),
                                                                   sys.version_info[0]),
                      'wb',
                      compresslevel=1) as fp:
