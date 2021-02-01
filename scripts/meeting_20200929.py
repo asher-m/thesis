@@ -22,6 +22,11 @@ import data  # nopep8
 FLUX_LIMLOW, FLUX_LIMHIGH = 1e-4, 1e4
 P0 = numpy.array([1e10, -3/2])
 
+# make vector for convenience
+d2t = numpy.vectorize(spacepy.pycdf.lib.datetime_to_tt2000)
+t2d = numpy.vectorize(spacepy.pycdf.lib.tt2000_to_datetime)
+d2s = numpy.vectorize(lambda dt: dt.strftime('%F (%Y-%j)'))
+
 
 def rebin(epoch, flux, pa, sa, cadence=None, flux_unc=None):
     """ Rebin fluxes. 
@@ -124,7 +129,7 @@ def spectrogram(epoch, flux_omni, flux_pa, flux_sa, energy, pname, keepfig=False
     # First plot omni:
     ax = axes[0, 1]
     ax.pcolormesh(
-        epoch,
+        d2t(epoch),
         energy[0, 0],
         numpy.ma.array(flux_omni, mask=numpy.isnan(flux_omni)).T,
         cmap=cmap,
@@ -137,7 +142,7 @@ def spectrogram(epoch, flux_omni, flux_pa, flux_sa, energy, pname, keepfig=False
     for i, k in enumerate(('par', 'perp', 'apar')):
         ax = axes[1, i]
         ax.pcolormesh(
-            epoch,
+            d2t(epoch),
             energy[0, 0],
             numpy.ma.array(flux_pa[k], mask=numpy.isnan(flux_pa[k])).T,
             cmap=cmap,
@@ -150,7 +155,7 @@ def spectrogram(epoch, flux_omni, flux_pa, flux_sa, energy, pname, keepfig=False
     for i, k in enumerate(('par', 'perp', 'apar')):
         ax = axes[2, i]
         ax.pcolormesh(
-            epoch,
+            d2t(epoch),
             energy[0, 0],
             numpy.ma.array(flux_sa[k], mask=numpy.isnan(flux_sa[k])).T,
             cmap=cmap,
@@ -158,6 +163,10 @@ def spectrogram(epoch, flux_omni, flux_pa, flux_sa, energy, pname, keepfig=False
             shading='auto',
             rasterized=True
         )
+        # this is the bottom axis, so make nice text labels
+        xticks = ax.get_xticks()
+        ax.set_xticklabels(d2s(t2d(xticks.astype(numpy.int64))), rotation=90)
+
 
     # Save:
     fig.tight_layout()
@@ -310,6 +319,15 @@ def main():
     for i, e in enumerate(eventdata):
         for d in data.DATASETS:
             for g in data.DATASETS[d]:
+                if not all([  # check to make sure we have all keys
+                    g['epoch'] in e[d].keys(),
+                    g['flux'] in e[d].keys(),
+                    g['flux_unc'] in e[d].keys(),
+                    g['pa'] in e[d].keys(),
+                    g['sa'] in e[d].keys(),
+                    g['energy'] in e[d].keys(),
+                ]):
+                    continue
                 epoch = e[d][g['epoch']]
                 flux = e[d][g['flux']]
                 flux_unc = e[d][g['flux_unc']]
