@@ -363,11 +363,11 @@ def _main_threading(gargs):
                     flux_sa,
                     energy,
                 (   
-                    'meeting_20200929/spectrogram_event-{:02d}_{}_{}.png'.format(
+                    'meeting_20200929/event-{:02d}_spectrogram_{}_{}.png'.format(
                          i,
                          spacepy.pycdf.lib.tt2000_to_datetime(epoch[0]).strftime('%Y-%j'),  # nopep8
                          g['flux'].lower()),
-                    # 'meeting_20200929/spectrogram_event-{:02d}_{}_{}.pdf'.format(
+                    # 'meeting_20200929/event-{:02d}_spectrogram_{}_{}.pdf'.format(
                     #  i,
                     #  spacepy.pycdf.lib.tt2000_to_datetime(epoch[0]).strftime('%Y-%j'),  # nopep8
                     #  g['flux'].lower())
@@ -392,11 +392,11 @@ def _main_threading(gargs):
                     flux_unc_sa,
                     energy,
                 (
-                    'meeting_20200929/spectrum_event-{:02d}_{}_{}.png'.format(
+                    'meeting_20200929/event-{:02d}_spectrum_{}_{}.png'.format(
                          i,
                          spacepy.pycdf.lib.tt2000_to_datetime(epoch[0]).strftime('%Y-%j'),  # nopep8
                          g['flux'].lower()),
-                    # 'meeting_20200929/spectrum_event-{:02d}_{}_{}.pdf'.format(
+                    # 'meeting_20200929/event-{:02d}_spectrum_{}_{}.pdf'.format(
                     #  i,
                     #  spacepy.pycdf.lib.tt2000_to_datetime(epoch[0]).strftime('%Y-%j'),  # nopep8
                     #  g['flux'].lower())
