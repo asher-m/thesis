@@ -93,8 +93,13 @@ def read_data(verbose=True, raw_epoch=True, use_cache=True, globstr=''):
             event_data = {g[v]: [] for g in DATASETS[d]
                           for v in g if not v == 'reverse'}
             for i in range((stopday - strtday).days):  # open file for everyday
-                f = isois.get_latest(
-                    d, date=(strtday + i * datetime.timedelta(days=1)).strftime('%Y%m%d'))[0]
+                f_today = isois.get_latest(
+                    d, date=(strtday + i * datetime.timedelta(days=1)).strftime('%Y%m%d'))
+                # it's possible that we occasionally have no files for today
+                if len(f_today) > 0:
+                    f = f_today[0]
+                else:
+                    continue
                 if verbose:
                     print('\t\tReading file {}...'.format(f))
 
@@ -129,8 +134,11 @@ def read_data(verbose=True, raw_epoch=True, use_cache=True, globstr=''):
                             vardat = varcopy[...]
                             event_data[g[v]].append(vardat)
 
-            for v in event_data:
-                event_outdata[d][v] = numpy.concatenate(event_data[v])
+            try:
+                for v in event_data:
+                    event_outdata[d][v] = numpy.concatenate(event_data[v])
+            except ValueError as e:
+                print('Error on concatenation!  Got:\n\tValueError: {}'.format(e))
 
         outdata.append(event_outdata)
 
