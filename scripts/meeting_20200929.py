@@ -265,10 +265,10 @@ def spectrum(epoch, flux_omni, flux_unc_omni, flux_pa, flux_unc_pa, flux_sa, flu
                     p0=P0
                 )
                 ax.plot(erange,
-                    data.model(erange, *popt),
+                        data.model(erange, *popt),
                         label='pa {} fit {:3} to {:3} keV: coeff {:5f}'.format(
                             k, eset[0], eset[1], popt[-1])
-                )
+                        )
             except:
                 pass
 
@@ -322,86 +322,86 @@ def spectrum(epoch, flux_omni, flux_unc_omni, flux_pa, flux_unc_pa, flux_sa, flu
 
 def _main_threading(gargs):
     i, e = gargs
-        for d in data.DATASETS:
-            for g in data.DATASETS[d]:
+    for d in data.DATASETS:
+        for g in data.DATASETS[d]:
             # skip ChanP
             if 'ChanP' in g['epoch']:
                 continue
 
-                if not all([  # check to make sure we have all keys
-                    g['epoch'] in e[d].keys(),
-                    g['flux'] in e[d].keys(),
-                    g['flux_unc'] in e[d].keys(),
-                    g['pa'] in e[d].keys(),
-                    g['sa'] in e[d].keys(),
-                    g['energy'] in e[d].keys(),
-                ]):
-                    continue
-                epoch = e[d][g['epoch']]
-                flux = e[d][g['flux']]
-                flux_unc = e[d][g['flux_unc']]
-                pa = e[d][g['pa']]
-                sa = e[d][g['sa']]
-                energy = e[d][g['energy']]
+            if not all([  # check to make sure we have all keys
+                g['epoch'] in e[d].keys(),
+                g['flux'] in e[d].keys(),
+                g['flux_unc'] in e[d].keys(),
+                g['pa'] in e[d].keys(),
+                g['sa'] in e[d].keys(),
+                g['energy'] in e[d].keys(),
+            ]):
+                continue
+            epoch = e[d][g['epoch']]
+            flux = e[d][g['flux']]
+            flux_unc = e[d][g['flux_unc']]
+            pa = e[d][g['pa']]
+            sa = e[d][g['sa']]
+            energy = e[d][g['energy']]
 
-                # Check if we can actually handle this event:
-                if not len(epoch) > 1:
-                    continue
+            # Check if we can actually handle this event:
+            if not len(epoch) > 1:
+                continue
 
-                epoch_fake, flux_omni, flux_pa, flux_sa = rebin(
-                    epoch,
-                    flux,
-                    pa,
-                    sa,
-                    cadence=60 * 60 * 1e9  # 1 hour in nanoseconds
-                )
+            epoch_fake, flux_omni, flux_pa, flux_sa = rebin(
+                epoch,
+                flux,
+                pa,
+                sa,
+                cadence=60 * 60 * 1e9  # 1 hour in nanoseconds
+            )
 
-                spectrogram(
-                    epoch_fake,
-                    flux_omni,
-                    flux_pa,
-                    flux_sa,
-                    energy,
+            spectrogram(
+                epoch_fake,
+                flux_omni,
+                flux_pa,
+                flux_sa,
+                energy,
                 (   
                     'meeting_20200929/event-{:02d}_spectrogram_{}_{}.png'.format(
-                         i,
-                         spacepy.pycdf.lib.tt2000_to_datetime(epoch[0]).strftime('%Y-%j'),  # nopep8
-                         g['flux'].lower()),
+                        i,
+                        spacepy.pycdf.lib.tt2000_to_datetime(epoch[0]).strftime('%Y-%j'),  # nopep8
+                        g['flux'].lower()),
                     # 'meeting_20200929/event-{:02d}_spectrogram_{}_{}.pdf'.format(
                     #  i,
                     #  spacepy.pycdf.lib.tt2000_to_datetime(epoch[0]).strftime('%Y-%j'),  # nopep8
                     #  g['flux'].lower())
                 )
-                )
+            )
 
-                epoch_fake, flux_omni, flux_pa, flux_sa, flux_unc_omni, flux_unc_pa, flux_unc_sa = rebin(
-                    epoch,
-                    flux,
-                    pa,
-                    sa,
-                    flux_unc=flux_unc
-                )
+            epoch_fake, flux_omni, flux_pa, flux_sa, flux_unc_omni, flux_unc_pa, flux_unc_sa = rebin(
+                epoch,
+                flux,
+                pa,
+                sa,
+                flux_unc=flux_unc
+            )
 
-                spectrum(
-                    epoch_fake,
-                    flux_omni,
-                    flux_unc_omni,
-                    flux_pa,
-                    flux_unc_pa,
-                    flux_sa,
-                    flux_unc_sa,
-                    energy,
+            spectrum(
+                epoch_fake,
+                flux_omni,
+                flux_unc_omni,
+                flux_pa,
+                flux_unc_pa,
+                flux_sa,
+                flux_unc_sa,
+                energy,
                 (
                     'meeting_20200929/event-{:02d}_spectrum_{}_{}.png'.format(
-                         i,
-                         spacepy.pycdf.lib.tt2000_to_datetime(epoch[0]).strftime('%Y-%j'),  # nopep8
-                         g['flux'].lower()),
+                        i,
+                        spacepy.pycdf.lib.tt2000_to_datetime(epoch[0]).strftime('%Y-%j'),  # nopep8
+                        g['flux'].lower()),
                     # 'meeting_20200929/event-{:02d}_spectrum_{}_{}.pdf'.format(
                     #  i,
                     #  spacepy.pycdf.lib.tt2000_to_datetime(epoch[0]).strftime('%Y-%j'),  # nopep8
                     #  g['flux'].lower())
                 )
-                )
+            )
 
 def main():
     eventdata = data.read_data(
@@ -412,6 +412,9 @@ def main():
 
     with multiprocessing.Pool(cpus_to_use) as pool:
         pool.map(_main_threading, zip((i for i in range(len(eventdata))), (e for e in eventdata)))
+
+    # for gargs in zip((i for i in range(len(eventdata))), (e for e in eventdata)):
+    #     _main_threading(gargs)
 
     return eventdata
 
