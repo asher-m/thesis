@@ -19,14 +19,14 @@ import spacepy.datamanager  # nopep8
 # nopep8
 import data  # nopep8
 
-
+FIG_H, FIG_V = 16, 16
 FLUX_LIMLOW, FLUX_LIMHIGH = 1e-4, 1e4
 P0 = numpy.array([1e10, -3/2])
 
 # make vector for convenience
 d2t = numpy.vectorize(spacepy.pycdf.lib.datetime_to_tt2000)
 t2d = numpy.vectorize(spacepy.pycdf.lib.tt2000_to_datetime)
-d2s = numpy.vectorize(lambda dt: dt.strftime('%F (%Y-%j)'))
+d2s = numpy.vectorize(lambda dt: dt.strftime('%Y%m%d (%j) %H%M'))
 
 
 def rebin(epoch, flux, pa, sa, cadence=None, flux_unc=None):
@@ -112,25 +112,16 @@ def spectrogram(epoch, flux_omni, flux_pa, flux_sa, energy, pname, keepfig=False
     norm = matplotlib.colors.LogNorm(vmin=FLUX_LIMLOW, vmax=FLUX_LIMHIGH)
 
     fig, axes = plt.subplots(nrows=3, ncols=3,
-                             figsize=(20, 20),
+                             figsize=(FIG_H, FIG_V),
                              sharex=True, sharey=True)
 
     # Check to make sure energy is consistent across time:
     assert(numpy.all(energy == energy[0]))
 
-    # Change epoch back to datetime so we can plot nicely;
-    # need to do with for loop because spacepy.pycdf.lib.tt2000_to_datetime
-    # cannot handle vectors:
-    epoch = [spacepy.pycdf.lib.tt2000_to_datetime(int(e)) for e in epoch]
-
-    # Sharing x and y, so set them smartly:
-    ax = axes[0, 0]
-    ax.set_yscale('log')
-
     # First plot omni:
     ax = axes[0, 1]
     ax.pcolormesh(
-        d2t(epoch),
+        epoch,
         energy[0, 0],
         numpy.ma.array(flux_omni, mask=numpy.isnan(flux_omni)).T,
         cmap=cmap,
@@ -143,7 +134,7 @@ def spectrogram(epoch, flux_omni, flux_pa, flux_sa, energy, pname, keepfig=False
     for i, k in enumerate(('par', 'perp', 'apar')):
         ax = axes[1, i]
         ax.pcolormesh(
-            d2t(epoch),
+            epoch,
             energy[0, 0],
             numpy.ma.array(flux_pa[k], mask=numpy.isnan(flux_pa[k])).T,
             cmap=cmap,
@@ -156,7 +147,7 @@ def spectrogram(epoch, flux_omni, flux_pa, flux_sa, energy, pname, keepfig=False
     for i, k in enumerate(('par', 'perp', 'apar')):
         ax = axes[2, i]
         ax.pcolormesh(
-            d2t(epoch),
+            epoch,
             energy[0, 0],
             numpy.ma.array(flux_sa[k], mask=numpy.isnan(flux_sa[k])).T,
             cmap=cmap,
@@ -164,10 +155,21 @@ def spectrogram(epoch, flux_omni, flux_pa, flux_sa, energy, pname, keepfig=False
             shading='auto',
             rasterized=True
         )
-        # this is the bottom axis, so make nice text labels
-        xticks = ax.get_xticks()
-        ax.set_xticklabels(d2s(t2d(xticks.astype(numpy.int64))), rotation=90)
 
+    # handle axis labels/settings:
+    ax = axes[-1, -1]
+    ax.set_yscale('log')
+    xticks = ax.get_xticks()
+    # only way I can seem to make it consistent
+    for i in range(2):
+        for j in range(3):
+            ax = axes[i, j]
+            ax.set_xticks(xticks)
+    for i in range(3):
+        ax = axes[2, i]
+        # this is the bottom axis, so make nice text labels
+        ax.set_xticks(xticks)
+        ax.set_xticklabels(d2s(t2d(xticks.astype(numpy.int64))), rotation=90)
 
     # Save:
     fig.tight_layout()
@@ -193,13 +195,14 @@ def spectrum(epoch, flux_omni, flux_unc_omni, flux_pa, flux_unc_pa, flux_sa, flu
         ax.set_ylim(FLUX_LIMLOW, FLUX_LIMHIGH)
         ax.set_xscale('log')
         ax.set_xlabel('Energy (keV)')
-        ax.set_xlim(20, 400)  # 400 here doesn't make any sesne but matplotlib seems to do what it wants
+        # 400 here doesn't make any sesne but matplotlib seems to do what it wants
+        ax.set_xlim(20, 400)
         ax.legend()
 
     energy_bounds = ((37, 160), (95, 160))
 
     fig, axes = plt.subplots(nrows=3, ncols=3,
-                             figsize=(20, 20),
+                             figsize=(FIG_H, FIG_V),
                              sharex=True, sharey=True)
 
     # Check to make sure energy is consistent across time:
@@ -234,7 +237,8 @@ def spectrum(epoch, flux_omni, flux_unc_omni, flux_pa, flux_unc_pa, flux_sa, flu
             ax.plot(
                 erange,
                 data.model(erange, *popt),
-                label='omni fit {:3} to {:3} keV: coeff {:5f}'.format(eset[0], eset[1], popt[-1])
+                label='omni fit {:3} to {:3} keV: coeff {:5f}'.format(
+                    eset[0], eset[1], popt[-1])
             )
         except:
             pass
@@ -262,7 +266,8 @@ def spectrum(epoch, flux_omni, flux_unc_omni, flux_pa, flux_unc_pa, flux_sa, flu
                 )
                 ax.plot(erange,
                     data.model(erange, *popt),
-                    label='pa {} fit {:3} to {:3} keV: coeff {:5f}'.format(k, eset[0], eset[1], popt[-1])
+                        label='pa {} fit {:3} to {:3} keV: coeff {:5f}'.format(
+                            k, eset[0], eset[1], popt[-1])
                 )
             except:
                 pass
@@ -291,7 +296,8 @@ def spectrum(epoch, flux_omni, flux_unc_omni, flux_pa, flux_unc_pa, flux_sa, flu
                 ax.plot(
                     erange,
                     data.model(erange, *popt),
-                    label='sa {} fit {:3} to {:3} keV: coeff {:5f}'.format(k, eset[0], eset[1], popt[-1])
+                    label='sa {} fit {:3} to {:3} keV: coeff {:5f}'.format(
+                        k, eset[0], eset[1], popt[-1])
                 )
             except:
                 pass
