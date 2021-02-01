@@ -8,6 +8,7 @@ import matplotlib.cm  # nopep8
 import matplotlib.colors  # nopep8
 import matplotlib.pyplot as plt  # nopep8
 import matplotlib.pyplot as plt  # nopep8
+import multiprocessing  # nopep8
 import numpy  # nopep8
 import scipy.optimize  # nopep8
 import sys  # nopep8
@@ -313,12 +314,14 @@ def spectrum(epoch, flux_omni, flux_unc_omni, flux_pa, flux_unc_pa, flux_sa, flu
     else:
         plt.close(fig)
 
-
-def main():
-    eventdata = data.read_data(verbose=True, globstr=sys.argv[1] if len(sys.argv) > 1 else '')
-    for i, e in enumerate(eventdata):
+def _main_threading(gargs):
+    i, e = gargs
         for d in data.DATASETS:
             for g in data.DATASETS[d]:
+            # skip ChanP
+            if 'ChanP' in g['epoch']:
+                continue
+
                 if not all([  # check to make sure we have all keys
                     g['epoch'] in e[d].keys(),
                     g['flux'] in e[d].keys(),
@@ -353,14 +356,16 @@ def main():
                     flux_pa,
                     flux_sa,
                     energy,
-                    ('meeting_20200929/spectrogram_event-{:02d}_{}_{}.png'.format(
+                (   
+                    'meeting_20200929/spectrogram_event-{:02d}_{}_{}.png'.format(
                          i,
                          spacepy.pycdf.lib.tt2000_to_datetime(epoch[0]).strftime('%Y-%j'),  # nopep8
                          g['flux'].lower()),
-                     'meeting_20200929/spectrogram_event-{:02d}_{}_{}.pdf'.format(
-                         i,
-                         spacepy.pycdf.lib.tt2000_to_datetime(epoch[0]).strftime('%Y-%j'),  # nopep8
-                         g['flux'].lower()))
+                    # 'meeting_20200929/spectrogram_event-{:02d}_{}_{}.pdf'.format(
+                    #  i,
+                    #  spacepy.pycdf.lib.tt2000_to_datetime(epoch[0]).strftime('%Y-%j'),  # nopep8
+                    #  g['flux'].lower())
+                )
                 )
 
                 epoch_fake, flux_omni, flux_pa, flux_sa, flux_unc_omni, flux_unc_pa, flux_unc_sa = rebin(
@@ -380,15 +385,27 @@ def main():
                     flux_sa,
                     flux_unc_sa,
                     energy,
-                    ('meeting_20200929/spectrum_event-{:02d}_{}_{}.png'.format(
+                (
+                    'meeting_20200929/spectrum_event-{:02d}_{}_{}.png'.format(
                          i,
                          spacepy.pycdf.lib.tt2000_to_datetime(epoch[0]).strftime('%Y-%j'),  # nopep8
                          g['flux'].lower()),
-                     'meeting_20200929/spectrum_event-{:02d}_{}_{}.pdf'.format(
-                         i,
-                         spacepy.pycdf.lib.tt2000_to_datetime(epoch[0]).strftime('%Y-%j'),  # nopep8
-                         g['flux'].lower()))
+                    # 'meeting_20200929/spectrum_event-{:02d}_{}_{}.pdf'.format(
+                    #  i,
+                    #  spacepy.pycdf.lib.tt2000_to_datetime(epoch[0]).strftime('%Y-%j'),  # nopep8
+                    #  g['flux'].lower())
                 )
+                )
+
+def main():
+    eventdata = data.read_data(
+        verbose=True, globstr=sys.argv[1] if len(sys.argv) > 1 else '')
+    
+    cpus_on_system = multiprocessing.cpu_count()
+    cpus_to_use = cpus_on_system - 4 if cpus_on_system - 4 > 0 else cpus_on_system
+
+    with multiprocessing.Pool(cpus_to_use) as pool:
+        pool.map(_main_threading, zip((i for i in range(len(eventdata))), (e for e in eventdata)))
 
     return eventdata
 
