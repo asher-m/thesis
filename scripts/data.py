@@ -85,9 +85,7 @@ def _read_data_process(verbose, raw_epoch, d, strtday, i):
                 # reverse if necessary:
                 if reverse:
                     vardat = vardat[:, :, ::-1]
-                # figure out what nan(s) we have:
-                nonnan = numpy.any(~numpy.isnan(vardat), axis=(0, 1))  # nopep8
-                file_data[g[v]] = vardat[:, :, nonnan]
+                file_data[g[v]] = vardat
             else:
                 varcopy = spacepy.pycdf.VarCopy(cdf[g[v]])
                 # fill nan(s):
@@ -162,8 +160,9 @@ def read_data(verbose=True, raw_epoch=True, use_cache=True, globstr=''):
 
             # recombine data in list for concat
             for p in file_data:
-                for v in p:
-                    event_data[v].append(p[v])
+                if p is not None:
+                    for v in p:
+                        event_data[v].append(p[v])
 
             try:
                 for v in event_data:
