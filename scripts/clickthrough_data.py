@@ -52,6 +52,9 @@ def process_file(f):
         e = e_copy[...]
         p = p_copy[...]
 
+        # cut out bad lookdirs
+        cut_bad_lookdir(f)
+
         # get edges
         edges_times, edges_lookdir, edges_energy = edges(finfo['date'])
 
@@ -81,6 +84,14 @@ def process_file(f):
 
     c.close()
     return r
+
+
+def cut_bad_lookdir(f):
+    """Remove bad lookdirections."""
+    bad_lkdr = numpy.array(
+        [31, 34, 35]
+    )
+    f[bad_lkdr] = numpy.nan
 
 
 def edges(datestr, epoch=False):
@@ -147,7 +158,6 @@ def read_data():
     # some test cases:
     # files = isois.get_latest('psp_isois-epilo_l2-ic')[:10] # just first 10
     # files = isois.get_latest('psp_isois-epilo_l2-ic', date='20190404')  # really big day
-
 
     outdata['epoch'] = numpy.empty((0), dtype=numpy.int64)
     outdata['epoch'].fill(-1)
