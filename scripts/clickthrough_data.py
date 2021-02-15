@@ -91,7 +91,7 @@ def cut_bad_lookdir(f):
     bad_lkdr = numpy.array(
         [31, 34, 35]
     )
-    f[bad_lkdr] = numpy.nan
+    f[:, bad_lkdr, :] = numpy.nan
 
 
 def edges(datestr, epoch=False):
