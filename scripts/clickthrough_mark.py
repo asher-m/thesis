@@ -18,6 +18,8 @@ import sys
 import spacepy.plot
 import spacepy.pycdf
 
+import data
+
 
 # s = 'THIS SCRIPT MUST ONLY BE USED IN IPYTHON TO CAPTURE ITS RESULTS'
 # print('=' * 100)
@@ -34,7 +36,7 @@ with bz2.BZ2File('../data/clickdata.pickle3.bz2', 'rb') as fp:
     d = pickle.load(fp)
 
 
-def main():
+def main(displayOnly=False, displayEventFileGlobStr=None):
     cmap = copy.copy(cmp.get_cmap('jet'))
     cmap.set_bad(color='gray')
     norm = clr.LogNorm()
@@ -68,26 +70,38 @@ def main():
         int(d['epoch'][0]) + 37 * 24 * 60 * 60 * 1e9,
     )
 
-    # actually do analysis
-    c = spacepy.plot.utils.EventClicker(
-        n_phases=2,
-        interval=30 * 24 * 60 * 60 * 1e9,  # 1 month in nanos
-        ymax=200,
-        ymin=20,
-    )
-    c.analyze()
+    if displayOnly is not True:
+        # actually do analysis
+        c = spacepy.plot.utils.EventClicker(
+            n_phases=2,
+            interval=30 * 24 * 60 * 60 * 1e9,  # 1 month in nanos
+            ymax=200,
+            ymin=20,
+        )
+        c.analyze()
 
-    # dump events; need to convert tt2000 (as float) to datetimes
-    e = c.get_events()
-    e_dt = np.empty(shape=e.shape, dtype=object)
-    e_dt[:, :, 0] = t2d(e[:, :, 0].astype(np.int64))
-    e_dt[:, :, 1] = e[:, :, 1]  # can just copy other values (y-value of click)
+        # dump events; need to convert tt2000 (as float) to datetimes
+        e = c.get_events()
+        e_dt = np.empty(shape=e.shape, dtype=object)
+        e_dt[:, :, 0] = t2d(e[:, :, 0].astype(np.int64))
+        # can just copy other values (y-value of click)
+        e_dt[:, :, 1] = e[:, :, 1]
 
-    with open('../data/eventtimes_clickthrough-{}.pickle{}'.format(
-        datetime.datetime.now().strftime('%Y%m%d%H%M'),
-        sys.version_info[0]
-    ), 'wb') as fp:
-        pickle.dump(e_dt, fp)
+        with open('../data/eventtimes_clickthrough-{}.pickle{}'.format(
+            datetime.datetime.now().strftime('%Y%m%d%H%M'),
+            sys.version_info[0]
+        ), 'wb') as fp:
+            pickle.dump(e_dt, fp)
+    else:
+        # get eventtimes
+        e = data.read_events(displayEventFileGlobStr)
+        # get colors
+        c = ['black' if i % 2 == 0 else 'red' for i in range(len(e.flatten()))]
+        #  plot a vline at each e
+        plt.vlines(d2t(e.flatten()), ymin=1, ymax=1e5, colors=c)
+
+        # and finally display the plot
+        plt.show()
 
 
 if __name__ == '__main__':
