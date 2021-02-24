@@ -5,8 +5,8 @@ from meeting_20200929 import d2t, t2d, d2s
 
 e = data.read_events(globstr=sys.argv[1] if len(sys.argv) > 1 else '')
 
-# '{i:<02d}\t{strt:>20s}\t{strt_tt2000:>32d}\t{stop:>20s}\t{strt_tt2000:>32d}'
-print('{i:2s}\t{strt:>20s}\t{strt_tt2000:>20s}\t{stop:>20s}\t{stop_tt2000:>20s}'.format(
+# '{i:<02d},\t{strt:>20s},\t{strt_tt2000:>32d},\t{stop:>20s},\t{strt_tt2000:>32d}'
+print('{i:2s},\t{strt:>20s},\t{strt_tt2000:>20s},\t{stop:>20s},\t{stop_tt2000:>20s}'.format(
     **dict(i='EN', strt='Starttime', strt_tt2000='Starttime (TT2000)',
            stop='Stoptime', stop_tt2000='Stoptime (TT2000)')
 ))
@@ -20,4 +20,4 @@ zipped = zip(
 )
 
 for vals in zipped:
-    print('{:02d}\t{:>20s}\t{:>20d}\t{:>20s}\t{:>20d}'.format(*vals))
+    print('{:02d},\t{:>20s},\t{:>20d},\t{:>20s},\t{:>20d}'.format(*vals))
