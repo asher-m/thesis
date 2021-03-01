@@ -120,57 +120,55 @@ def read_data(verbose=True, raw_epoch=True, use_cache=True, globstr=''):
                       'and resorting to rebuilding but '
                       'cannot use isois library on non-Linux systems!')
 
-    # If not, do the regular:
-    outdata = []
+    # create multiprocessing pool
+    with multiprocessing.Pool(cpus_to_use) as pool:
+        outdata = []  # create holding place
+        events = read_events(globstr)  # read events
 
-    events = read_events(globstr)
-
-    for i, e in enumerate(events):
-        strtday = floor_datetime(e[0])
-        stopday = ceil_datetime(e[1])
-        if verbose:
-            print('Working on event {} (index {:02d}):'.format(
-                strtday.strftime('%Y-%j'),
-                i
-            ))
-
-        event_outdata = {d: {} for d in DATASETS}
-
-        for d in DATASETS:
+        for i, e in enumerate(events):
+            strtday = floor_datetime(e[0])
+            stopday = ceil_datetime(e[1])
             if verbose:
-                print('\tWorking on dataset {}:'.format(d))
+                print('Working on event {} (index {:02d}):'.format(
+                    strtday.strftime('%Y-%j'),
+                    i
+                ))
 
-            event_data = {g[v]: [] for g in DATASETS[d]
-                          for v in g if not v == 'reverse'}
+            event_outdata = {d: {} for d in DATASETS}
 
-            _read_data_process_baked = functools.partial(
-                _read_data_process,
-                verbose,
-                raw_epoch,
-                d,
-                strtday
-            )
+            for d in DATASETS:
+                if verbose:
+                    print('\tWorking on dataset {}:'.format(d))
 
-            # Pool here
-            with multiprocessing.Pool(cpus_to_use) as pool:
+                event_data = {g[v]: [] for g in DATASETS[d]
+                              for v in g if not v == 'reverse'}
+
+                _read_data_process_baked = functools.partial(
+                    _read_data_process,
+                    verbose,
+                    raw_epoch,
+                    d,
+                    strtday
+                )
+
                 file_data = pool.map(
                     _read_data_process_baked,
                     range((stopday - strtday).days)
                 )
 
-            # recombine data in list for concat
-            for p in file_data:
-                if p is not None:
-                    for v in p:
-                        event_data[v].append(p[v])
+                # recombine data in list for concat
+                for p in file_data:
+                    if p is not None:
+                        for v in p:
+                            event_data[v].append(p[v])
 
-            try:
-                for v in event_data:
-                    event_outdata[d][v] = numpy.concatenate(event_data[v])
-            except ValueError as e:
-                print('Error on concatenation!  Got:\n\tValueError: {}'.format(e))
+                try:
+                    for v in event_data:
+                        event_outdata[d][v] = numpy.concatenate(event_data[v])
+                except ValueError as e:
+                    print('Error on concatenation!  Got:\n\tValueError: {}'.format(e))
 
-        outdata.append(event_outdata)
+            outdata.append(event_outdata)
 
     # Save for faster access:
     print('Working on writing data to cache and bz2 compression...')
