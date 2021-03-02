@@ -34,6 +34,8 @@ DATASETS = {
             'pa': 'PA_ChanT',
             'sa': 'SA_ChanT',
             'energy': 'H_ChanT_Energy',
+            'energy_unc_plus': 'H_ChanT_Energy_DELTAPLUS',
+            'energy_unc_minus': 'H_ChanT_Energy_DELTAMINUS',
             'reverse': True  # reverse array along energy axis
         },
         {
@@ -42,7 +44,9 @@ DATASETS = {
             'flux_unc': 'H_Flux_ChanP_DELTA',
             'pa': 'PA_ChanP',
             'sa': 'SA_ChanP',
-            'energy': 'H_ChanP_Energy'
+            'energy': 'H_ChanP_Energy',
+            'energy_unc_plus': 'H_ChanP_Energy_DELTAPLUS',
+            'energy_unc_minus': 'H_ChanP_Energy_DELTAMINUS'
         }
     ]
 }
@@ -72,7 +76,7 @@ def _read_data_process(verbose, raw_epoch, d, strtday, i):
             # some bools to make this easier:
             reverse = True if 'reverse' in g.keys() and g['reverse'] is True \
                 else False
-            energy_var = True if v == 'energy' or v == 'flux' or v == 'flux_unc' \
+            energy_var = True if 'energy' in v or v == 'flux' or v == 'flux_unc' \
                 else False
             # read data and append to right place in the right way
             if v == 'epoch' and raw_epoch is True:
