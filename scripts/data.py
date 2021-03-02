@@ -96,7 +96,7 @@ def _read_data_process(verbose, raw_epoch, d, strtday, i):
     return file_data
 
 
-def read_data(verbose=True, raw_epoch=True, use_cache=True, globstr=''):
+def read_data(globstr='', verbose=True, raw_epoch=True, use_cache=True):
     """ Function to read event data from CDFs (without concat). """
     if use_cache is True:
         files = sorted(glob.glob('../data/eventdata_[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'
