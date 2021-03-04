@@ -25,13 +25,14 @@ def main():
         flux = np.nanmean(flux, axis=(0, 1))
 
         # need to replace nan(s) with 0(s) at this point (for np.average)
-        flux[np.isnan(flux)] = 0
+        idx = np.isnan(flux)
+        flux[idx] = 0
 
         # sanity check
         assert(np.all((energy_unc_plus == energy_unc_plus[0, :, :])[~np.isnan(energy_unc_plus)]))
         assert(np.all((energy_unc_minus == energy_unc_minus[0, :, :])[~np.isnan(energy_unc_minus)]))
         weights = np.nanmean(energy_unc_plus[0], axis=0) + np.nanmean(energy_unc_minus[0], axis=0)
-        weights[np.isnan(weights)] = 0  # again replace with 0
+        weights[idx] = 0  # again replace with 0
 
         avgflux = np.average(flux, weights=weights)
 
