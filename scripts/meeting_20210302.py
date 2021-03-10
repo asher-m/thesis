@@ -8,6 +8,7 @@ import os  # nopep8
 import pickle  # nopep8
 import platform  # nopep8
 import re  # nopep8
+import scipy.integrate  # nopep8
 import sys  # nopep8
 
 import spacepy  # nopep8
@@ -207,18 +208,31 @@ def main():
         flux = numpy.nanmean(flux, axis=(0, 1))
 
         # need to replace nan(s) with 0(s) at this point (for numpy.average)
-        idx = numpy.isnan(flux)
-        flux[idx] = 0
+        nonnan = ~numpy.isnan(flux)
+        # flux[nonnan] = 0
 
         # sanity check
+        assert(numpy.all((energy == energy[0, :, :])[~numpy.isnan(energy)]))  # nopep8
         assert(numpy.all((energy_unc_plus == energy_unc_plus[0, :, :])[~numpy.isnan(energy_unc_plus)]))  # nopep8
         assert(numpy.all((energy_unc_minus == energy_unc_minus[0, :, :])[~numpy.isnan(energy_unc_minus)]))  # nopep8
-        weights = numpy.nanmean(energy_unc_plus[0], axis=0) + numpy.nanmean(energy_unc_minus[0], axis=0)  # nopep8
-        weights[idx] = 0  # again replace with 0
 
-        avgflux = numpy.average(flux, weights=weights)
+        # calculate weights
+        # weights = numpy.nanmean(energy_unc_plus[0], axis=0) + numpy.nanmean(energy_unc_minus[0], axis=0)  # nopep8
+        # weights[nonnan] = 0  # again replace with 0
 
-        al.append(avgflux*1e3)
+        # import pdb; pdb.set_trace()
+
+        # get non-zeroes
+        nonzero = numpy.zeros_like(flux, dtype=bool)
+        nonzero[numpy.nonzero(flux)] = True
+
+        interpf = lambda xx: numpy.interp(xx, energy[0, 0, numpy.logical_and(nonzero, nonnan)].flatten(), flux[numpy.logical_and(nonzero, nonnan)])
+
+        r = scipy.integrate.quad(interpf, 60, 800)
+
+        # avgflux = numpy.average(flux, weights=weights)
+
+        al.append(r)
 
     print(al)
 
