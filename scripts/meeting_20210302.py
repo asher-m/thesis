@@ -226,7 +226,7 @@ def main():
         nonzero = numpy.zeros_like(flux, dtype=bool)
         nonzero[numpy.nonzero(flux)] = True
 
-        interpf = lambda xx: numpy.interp(xx, energy[0, 0, numpy.logical_and(nonzero, nonnan)].flatten(), flux[numpy.logical_and(nonzero, nonnan)])
+        interpf = lambda xx: numpy.interp(xx, energy[0, 0, nonnan].flatten(), flux[nonnan])
 
         r = scipy.integrate.quad(interpf, 60, 800)
 
@@ -234,7 +234,7 @@ def main():
 
         al.append(r)
 
-    print(al)
+    return al
 
 if __name__ == '__main__':
     main()
