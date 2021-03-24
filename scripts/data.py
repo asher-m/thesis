@@ -55,20 +55,12 @@ cpus_on_system = multiprocessing.cpu_count()
 cpus_to_use = cpus_on_system - 4 if cpus_on_system - 4 > 0 else cpus_on_system
 
 
-def _read_data_process(verbose, raw_epoch, d, strtday, i):
-    # verbose, raw_epoch, d, i, strtday = gargs  # unpack args; makes multiprocessing easier
+
+def _read_data_process(verbose, raw_epoch, d, f):
+    cdf = spacepy.pycdf.CDF(f)  # open cdf
     file_data = dict()  # holding place for this file's data
-    f_today = isois.get_latest(
-        d, date=(strtday + i * datetime.timedelta(days=1)).strftime('%Y%m%d'))
-    # it's possible that we occasionally have no files for today
-    if len(f_today) > 0:
-        f = f_today[0]
-    else:
-        return
     if verbose:
         print('\t\tReading file {}...'.format(f))
-
-    cdf = spacepy.pycdf.CDF(f)
     for g in DATASETS[d]:  # for every group of variables
         for v in g:  # for every variable in the group
             if v == 'reverse':
@@ -130,11 +122,11 @@ def read_data(globstr='', verbose=True, raw_epoch=True, use_cache=True):
         events = read_events(globstr)  # read events
 
         for i, e in enumerate(events):
-            strtday = floor_datetime(e[0])
-            stopday = ceil_datetime(e[1])
+            strt = e[0]
+            stop = e[1]
             if verbose:
                 print('Working on event {} (index {:02d}):'.format(
-                    strtday.strftime('%Y-%j'),
+                    strt.strftime('%Y-%j'),
                     i
                 ))
 
@@ -144,20 +136,25 @@ def read_data(globstr='', verbose=True, raw_epoch=True, use_cache=True):
                 if verbose:
                     print('\tWorking on dataset {}:'.format(d))
 
+                # make destination for data
                 event_data = {g[v]: [] for g in DATASETS[d]
                               for v in g if not v == 'reverse'}
 
+                # bake function for mp.Pool.map
                 _read_data_process_baked = functools.partial(
                     _read_data_process,
                     verbose,
                     raw_epoch,
-                    d,
-                    strtday
+                    d
                 )
 
+                # get list of files for this start/stoptime
+                files = get_files(d, strt, stop)
+
+                # do the mp.Pool.map
                 file_data = pool.map(
                     _read_data_process_baked,
-                    range((stopday - strtday).days)
+                    files
                 )
 
                 # recombine data in list for concat
@@ -194,12 +191,19 @@ def read_events(globstr=''):
         return pickle.load(fp)[..., 0]
 
 
-def floor_datetime(date, delta=datetime.timedelta(days=1)):
-    return date - (datetime.datetime.min - date) % delta
+def get_files(d, strt, stop):
+    daterange = [strt.date() + datetime.timedelta(days=d)
+                 for d in range((stop.date() - strt.date()).days + 1)]
+    # sanity check
+    assert(strt.date() in daterange)
+    assert(stop.date() in daterange)
 
-
-def ceil_datetime(date, delta=datetime.timedelta(days=1)):
-    return date + (datetime.datetime.min - date) % delta
+    files = list()
+    for date in daterange:
+        ftoday = isois.get_latest(d, date=date)
+        if len(ftoday) > 0:
+            files.append(ftoday[-1])
+    return files
 
 
 def model(e, j_0, k):
