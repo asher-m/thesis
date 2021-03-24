@@ -54,6 +54,9 @@ DATASETS = {
 cpus_on_system = multiprocessing.cpu_count()
 cpus_to_use = cpus_on_system - 4 if cpus_on_system - 4 > 0 else cpus_on_system
 
+# make vector for convenience
+d2t = numpy.vectorize(spacepy.pycdf.lib.datetime_to_tt2000)
+t2d = numpy.vectorize(spacepy.pycdf.lib.tt2000_to_datetime)
 
 
 def _read_data_process(verbose, raw_epoch, d, f):
