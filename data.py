@@ -65,8 +65,14 @@ class Data:
         ]
     }
     """Dataset dict to parse/use."""
+
     events_file = 'data/eventtimes{}.pickle{}'
     """Eventsfile file format.  Probably shouldn't be changed."""
+
+    ignore_globstr = {
+        'joyce-apj-tab2',
+    }
+    """Globstrs to error on if they're used.  These eventsets have different access methods."""
 
     def __init__(self, globstr=None, eventtimes_file=None, eventdata_file=None):
         """Read event-related data.
@@ -75,6 +81,9 @@ class Data:
         :param eventtimes_file str: path of eventtimes file
         :param eventdata_file str: path of eventdata file
         """
+        # check if okay to continue with globstr
+        self._accept_ignored_globstr(globstr)
+
         self._globstr = None
         self._eventtimes_file = None
         self._eventdata_file = None
@@ -323,3 +332,8 @@ class Data:
             if len(ftoday) > 0:
                 files.append(ftoday[-1])
         return files
+
+    def _accept_ignored_globstr(self, globstr):
+        if globstr in self.ignore_globstr:
+            raise RuntimeWarning('This globstr or eventset has been marked to be ignored!\n'
+                                 'Should you be using a different data access method or module?')

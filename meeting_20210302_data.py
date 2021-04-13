@@ -7,6 +7,7 @@ import data
 
 
 class Data(data.Data):
+    # replace datasets with truncated datasets including only ChanP but with epoch_delta
     datasets = {
         'psp_isois-epilo_l2-ic': [
             {
@@ -23,6 +24,10 @@ class Data(data.Data):
         ]
     }
 
+    # remove the eventset this module is meant to handle
+    ignore_globstr = {s for s in data.Data.ignore_globstr if s != 'joyce-apj-tab2'}
+
+    # access release 2 datafiles
     def _get_files(self, d, strt, stop):
         """Override super method of _get_files to use new source directory."""
         daterange = [strt.date() + datetime.timedelta(days=d)
