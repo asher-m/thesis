@@ -4,11 +4,11 @@ mpl.use('Agg')   # nopep8
 import matplotlib.pyplot as plt   # nopep8
 import numpy as np   # nopep8
 
-import data   # nopep8
+import meeting_20210302_data as data   # nopep8
 
 
 d = 'psp_isois-epilo_l2-ic'
-d_keys = data.DATASETS[d][1]  # ChanP
+d_keys = data.Data.datasets[d][-1]  # ChanP
 
 
 def main():
@@ -20,8 +20,11 @@ def main():
     plt.yscale('log')
     plt.ylim(1e-6, 1e4)
 
+    DDD = data.Data('joyce-apj-tab2')
+    DDD.read_data()
+
     r = list()
-    for i, e in enumerate(data.read_data('joyce-apj-tab2')):
+    for i, e in enumerate(DDD.eventdata):
         # unpack relevant vars
         epoch = e[d][d_keys['epoch']]
         flux = e[d][d_keys['flux']]

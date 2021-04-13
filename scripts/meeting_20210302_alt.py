@@ -1,6 +1,6 @@
 import numpy as np
 
-import data
+import meeting_20210302_data as data
 
 d = 'psp_isois-epilo_l2-ic'
 d_keys = data.DATASETS[d][1]  # ChanP

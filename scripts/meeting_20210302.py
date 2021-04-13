@@ -20,6 +20,9 @@ if platform.system() == 'Linux':  # probably, hopefully running on isoc
 
 import data  # nopep8
 
+raise RuntimeWarning(
+    'This module ({}) needs to be updated before it can be used!'.format(__file__))
+
 
 DATASETS = {
     'psp_isois-epilo_l2-ic': [
