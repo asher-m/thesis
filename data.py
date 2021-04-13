@@ -65,7 +65,7 @@ class Data:
         ]
     }
     """Dataset dict to parse/use."""
-    events_file = '../data/eventtimes{}.pickle{}'
+    events_file = 'data/eventtimes{}.pickle{}'
     """Eventsfile file format.  Probably shouldn't be changed."""
 
     def __init__(self, globstr=None, eventtimes_file=None, eventdata_file=None):
@@ -136,7 +136,7 @@ class Data:
         if self._eventdata_file is None and use_cache is True:
             # glob for files and sort
             files = glob.glob(
-                '../data/eventdata_'
+                'data/eventdata_'
                 + ((self._globstr + '_') if self._globstr is not None else (''))
                 + '[0-9]' * 8
                 + '.pickle{}.bz2'.format(sys.version_info[0])
@@ -254,7 +254,7 @@ class Data:
         # Save for faster access:
         print('Working on writing data to cache and bz2 compression...')
         with bz2.BZ2File(
-            '../data/eventdata_{}{}.pickle{}.bz2'.format(  # no good way to break this line...
+            'data/eventdata_{}{}.pickle{}.bz2'.format(  # no good way to break this line...
                 ((self._globstr + '_') if self._globstr is not None else ('')),
                 datetime.datetime.now().strftime('%Y%m%d'),
                 sys.version_info[0]

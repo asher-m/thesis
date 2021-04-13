@@ -65,7 +65,7 @@ def main():
             pdb.set_trace()
 
     plt.tight_layout()
-    plt.savefig('../figures/meeting_20210302_plot.png')
+    plt.savefig('figures/meeting_20210302_plot.png')
 
     return r
 

@@ -183,7 +183,7 @@ def read_data():
         outdata[v]['flux'] = outdata[v]['flux'][srt_idx]
 
     print('Zipping...')
-    with bz2.BZ2File('../data/clickdata.pickle{}.bz2'.format(sys.version_info[0]),
+    with bz2.BZ2File('data/clickdata.pickle{}.bz2'.format(sys.version_info[0]),
                      'wb', compresslevel=1) as fp:
         pickle.dump(outdata, fp)
 

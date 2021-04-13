@@ -104,7 +104,7 @@ def read_data(verbose=True, raw_epoch=True, use_cache=True):
     globstr = 'joyce-apj-tab2'
 
     if use_cache is True:
-        files = sorted(glob.glob('../data/eventdata_joyce-apj-tab2_[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'
+        files = sorted(glob.glob('data/eventdata_joyce-apj-tab2_[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'
                                  + (('_' + globstr) if len(globstr) > 0 else (''))
                                  + '.pickle{}.bz2'.format(sys.version_info[0])))  # nopep8
         if len(files) > 0:
@@ -177,7 +177,7 @@ def read_data(verbose=True, raw_epoch=True, use_cache=True):
 
     # Save for faster access:
     print('Working on writing data to cache and bz2 compression...')
-    with bz2.BZ2File('../data/eventdata_{}{}.pickle{}.bz2'.format(datetime.datetime.now().strftime('%Y%m%d'),
+    with bz2.BZ2File('data/eventdata_{}{}.pickle{}.bz2'.format(datetime.datetime.now().strftime('%Y%m%d'),
                                                                                  (('_' + globstr)
                                                                                   if len(globstr) > 0 else ('')),
                                                                                  sys.version_info[0]),

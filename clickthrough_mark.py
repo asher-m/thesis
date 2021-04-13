@@ -32,7 +32,7 @@ t2d = np.vectorize(spacepy.pycdf.lib.tt2000_to_datetime)
 d2t = np.vectorize(spacepy.pycdf.lib.datetime_to_tt2000)
 d2s = np.vectorize(lambda dt: dt.strftime('%F (%Y-%j)'))
 
-with bz2.BZ2File('../data/clickdata.pickle3.bz2', 'rb') as fp:
+with bz2.BZ2File('data/clickdata.pickle3.bz2', 'rb') as fp:
     d = pickle.load(fp)
 
 
@@ -87,7 +87,7 @@ def main(displayOnly=False, displayEventFileGlobStr=None):
         # can just copy other values (y-value of click)
         e_dt[:, :, 1] = e[:, :, 1]
 
-        with open('../data/eventtimes_clickthrough-{}.pickle{}'.format(
+        with open('data/eventtimes_clickthrough-{}.pickle{}'.format(
             datetime.datetime.now().strftime('%Y%m%d%H%M'),
             sys.version_info[0]
         ), 'wb') as fp:
