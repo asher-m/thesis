@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+""" Data interface for the thesis. """
+
+
+import argparse
 import datetime
 import glob
 import os
@@ -9,8 +14,8 @@ import data
 class Data(data.Data):
     # replace datasets with truncated datasets including only ChanP but with epoch_delta
     datasets = {
-        'psp_isois-epilo_l2-ic': [
-            {
+        'psp_isois-epilo_l2-ic': {
+            'ChanP': {
                 'epoch': 'Epoch_ChanP',
                 'epoch_delta': 'Epoch_ChanP_DELTA',  # add epoch_delta for other analysis
                 'flux': 'H_Flux_ChanP',
@@ -21,11 +26,13 @@ class Data(data.Data):
                 'energy_unc_plus': 'H_ChanP_Energy_DELTAPLUS',
                 'energy_unc_minus': 'H_ChanP_Energy_DELTAMINUS'
             }
-        ]
+        }
     }
 
     # remove the eventset this module is meant to handle
-    ignore_globstr = {s for s in data.Data.ignore_globstr if s != 'joyce-apj-tab2'}
+    ignore_globstr = {
+        s for s in data.Data.ignore_globstr if s != 'joyce-apj-tab2'
+    }
 
     # access release 2 datafiles
     def _get_files(self, d, strt, stop):
@@ -48,3 +55,15 @@ class Data(data.Data):
             if len(ftoday) > 0:
                 files.append(ftoday[-1])
         return files
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description='Script form of data module.  Use to make data caches.')
+    parser.add_argument('globstr', type=str,
+                        help='glob str for eventtimes file')
+
+    args = parser.parse_args()
+
+    d = Data(args.globstr)
+    d.read_data(use_cache=False)
