@@ -32,6 +32,7 @@ cpus_to_use = cpus_on_system - 4 if cpus_on_system - 4 > 0 else cpus_on_system
 # make vector for convenience
 d2t = numpy.vectorize(spacepy.pycdf.lib.datetime_to_tt2000)
 t2d = numpy.vectorize(spacepy.pycdf.lib.tt2000_to_datetime)
+d2s = numpy.vectorize(lambda dt: dt.strftime('%Y%m%d (%j) %H%M'))
 
 
 def model(e, j_0, k):
@@ -71,7 +72,7 @@ class Data:
     """Eventsfile file format.  Probably shouldn't be changed."""
 
     ignore_globstr = {
-        'joyce-apj-tab2',
+        'joyce-apj-background',
     }
     """Globstrs to error on if they're used.  These eventsets have different access methods."""
 
