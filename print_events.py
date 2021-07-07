@@ -1,9 +1,10 @@
 import sys
 
-import data
-from meeting_20200929 import d2t, t2d, d2s
+import data_jat as data
+d2t, t2d, d2s = data.d2t, data.t2d, data.d2s
 
-e = data.read_events(globstr=sys.argv[1] if len(sys.argv) > 1 else '')
+d = data.Data(globstr=sys.argv[1] if len(sys.argv) > 1 else '')
+d.read_events()
 
 # '{i:<02d},\t{strt:>20s},\t{strt_tt2000:>32d},\t{stop:>20s},\t{strt_tt2000:>32d}'
 print('{i:2s},\t{strt:>20s},\t{strt_tt2000:>20s},\t{stop:>20s},\t{stop_tt2000:>20s}'.format(
@@ -12,11 +13,11 @@ print('{i:2s},\t{strt:>20s},\t{strt_tt2000:>20s},\t{stop:>20s},\t{stop_tt2000:>2
 ))
 
 zipped = zip(
-    [i for i in range(len(e))],
-    [s for s in d2s(e[:, 0])],
-    [s for s in d2t(e[:, 0])],
-    [s for s in d2s(e[:, 1])],
-    [s for s in d2t(e[:, 1])]
+    [i for i in range(len(d.eventtimes))],
+    [s for s in d2s(d.eventtimes[:, 0])],
+    [s for s in d2t(d.eventtimes[:, 0])],
+    [s for s in d2s(d.eventtimes[:, 1])],
+    [s for s in d2t(d.eventtimes[:, 1])]
 )
 
 for vals in zipped:
