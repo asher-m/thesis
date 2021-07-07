@@ -34,7 +34,7 @@ class Data(data.Data):
 
     # remove the eventset this module is meant to handle
     ignore_globstr = {
-        s for s in data.Data.ignore_globstr if s != 'joyce-apj-tab2'
+        s for s in data.Data.ignore_globstr if s != 'joyce-apj-background'
     }
 
     # access release 2 datafiles
