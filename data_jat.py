@@ -11,6 +11,9 @@ import os
 import data
 
 
+d2t, t2d, d2s = data.d2t, data.t2d, data.d2s
+
+
 class Data(data.Data):
     # replace datasets with truncated datasets including only ChanP but with epoch_delta
     datasets = {
