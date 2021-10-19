@@ -11,6 +11,13 @@ import os
 import data
 
 
+use_this_class_for_globstr = [
+    'joyce-apj-background',
+    'joyce-apj-events',
+    'joyce-apj-event-quiettimes',
+]
+
+
 d2t, t2d, d2s = data.d2t, data.t2d, data.d2s
 
 
@@ -34,7 +41,8 @@ class Data(data.Data):
 
     # remove the eventset this module is meant to handle
     ignore_globstr = {
-        s for s in data.Data.ignore_globstr if s != 'joyce-apj-background'
+        # a little messy, but works
+        s for s in data.Data.ignore_globstr if s not in use_this_class_for_globstr
     }
 
     # access release 2 datafiles

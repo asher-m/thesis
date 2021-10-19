@@ -26,6 +26,13 @@ if platform.system() == 'Linux':  # probably, hopefully running on isoc
     import isois
 
 
+do_not_use_this_class_for_globstr = [
+    'joyce-apj-background',
+    'joyce-apj-events',
+    'joyce-apj-event-quiettimes',
+]
+
+
 cpus_on_system = multiprocessing.cpu_count()
 cpus_to_use = cpus_on_system - 4 if cpus_on_system - 4 > 0 else cpus_on_system
 
@@ -71,9 +78,7 @@ class Data:
     events_file = 'data/eventtimes{}.pickle{}'
     """Eventsfile file format.  Probably shouldn't be changed."""
 
-    ignore_globstr = {
-        'joyce-apj-background',
-    }
+    ignore_globstr = set(do_not_use_this_class_for_globstr)
     """Globstrs to error on if they're used.  These eventsets have different access methods."""
 
     def __init__(self, globstr=None, eventtimes_file=None, eventdata_file=None):
